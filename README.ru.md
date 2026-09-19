@@ -24,6 +24,8 @@
 
 jev-layer маршрутизирует ограниченные решения и сохраняет доказательства; harness сохраняет владение исполнением, permissions, approvals, retry, восстановлением и итоговым результатом.
 
+> Интегрируете jev-layer в harness? Сначала дайте агенту [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md), а не только ссылку на этот README.
+
 ## Архитектура
 
 <p align="center">
@@ -129,4 +131,4 @@ npm pack --dry-run
 
 GitHub Actions запускает эти проверки на Node.js 20, 22 и 24. Provider-backed тесты требуют отдельного secret-managed окружения и не входят в обычный PR CI.
 
-Документы: [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md).
+Документы: [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md) · [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md).

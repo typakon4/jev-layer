@@ -24,6 +24,8 @@
 
 jev-layer 只负责路由有界决策并记录证据；host 保留执行、权限、审批、重试、恢复和最终结果的所有权。
 
+> 将 jev-layer 集成到 harness 时，请先把 [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md) 交给 agent，不要只发送 README 链接。
+
 ## 架构
 
 <p align="center">
@@ -129,4 +131,4 @@ npm pack --dry-run
 
 GitHub Actions 在 Node.js 20、22 和 24 上运行这些检查。Provider-backed 测试需要单独的 secret-managed 环境，不属于普通 PR CI。
 
-文档：[CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md)。
+文档：[CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [RELEASE.md](RELEASE.md) · [CHANGELOG.md](CHANGELOG.md) · [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md)。

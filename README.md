@@ -24,6 +24,8 @@
 
 jev-layer routes bounded choices and records evidence; the host keeps execution, permissions, approvals, retries, recovery, and final results.
 
+> Integrating jev-layer into a harness? Start with the [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md), not this README alone.
+
 ## Architecture
 
 <p align="center">
@@ -139,3 +141,4 @@ The GitHub Actions matrix runs these checks on Node.js 20, 22, and 24. Provider-
 - [SECURITY.md](SECURITY.md)
 - [RELEASE.md](RELEASE.md)
 - [CHANGELOG.md](CHANGELOG.md)
+- [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md)
