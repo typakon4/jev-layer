@@ -10,7 +10,6 @@
     "url": "https://github.com/typakon4/jev-layer/issues"
   },
   "homepage": "https://github.com/typakon4/jev-layer#readme",
-  "private": true,
   "type": "module",
   "bin": {
     "jev": "./bin/jev.mjs"
