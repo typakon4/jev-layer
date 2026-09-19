@@ -4,7 +4,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/typakon4/jev-layer.git"
+    "url": "git+https://github.com/typakon4/jev-layer.git"
   },
   "bugs": {
     "url": "https://github.com/typakon4/jev-layer/issues"
@@ -12,7 +12,7 @@
   "homepage": "https://github.com/typakon4/jev-layer#readme",
   "type": "module",
   "bin": {
-    "jev": "./bin/jev.mjs"
+    "jev": "bin/jev.mjs"
   },
   "files": [
     "bin/",
