@@ -18,7 +18,6 @@
   <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm version" src="https://img.shields.io/npm/v/jev-layer?logo=npm&amp;label=npm"></a>
   <a href="https://github.com/typakon4/jev-layer/releases"><img alt="latest GitHub release" src="https://img.shields.io/github/v/release/typakon4/jev-layer?display_name=tag&amp;sort=semver"></a>
   <a href="https://github.com/typakon4/jev-layer/blob/main/LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/typakon4/jev-layer"></a>
-  <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm downloads per month" src="https://img.shields.io/npm/dm/jev-layer?logo=npm&amp;label=downloads"></a>
 </p>
 
 [English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
