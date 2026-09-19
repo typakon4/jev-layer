@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "jev": {
+      "type": "stdio",
+      "command": "jev",
+      "args": ["mcp"],
+      "cwd": ".",
+      "env": {
+        "JEV_LAYER_PROVIDER": "demo"
+      }
+    }
+  }
+}

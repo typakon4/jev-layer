@@ -1,0 +1,8 @@
+[mcp_servers.jev]
+command = "jev"
+args = ["mcp"]
+cwd = "."
+
+[mcp_servers.jev.env]
+JEV_LAYER_PROVIDER = "openrouter"
+# Export OPENROUTER_API_KEY in the Codex process environment.

@@ -1,0 +1,9 @@
+# Merge this block into the Hermes config under mcp_servers.
+mcp_servers:
+  jev:
+    command: jev
+    args:
+      - mcp
+    env:
+      JEV_LAYER_PROVIDER: openrouter
+      # Export OPENROUTER_API_KEY in the Hermes process environment.

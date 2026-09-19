@@ -1,0 +1,19 @@
+{
+  "name": "jev-layer",
+  "version": "0.1.0",
+  "description": "Host-owned Jev capability routing through the standalone jev-layer core",
+  "author": { "name": "Local Jev Layer" },
+  "license": "MIT",
+  "keywords": ["jev", "routing", "decision", "mcp"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Jev Layer",
+    "shortDescription": "Bounded capability decisions without host execution",
+    "longDescription": "Routes a closed candidate set and leaves approvals and execution to Codex.",
+    "developerName": "Local Jev Layer",
+    "category": "Developer Tools",
+    "capabilities": ["Decision routing"],
+    "defaultPrompt": ["Use Jev only for bounded capability routing; keep execution and approvals in Codex."]
+  }
+}

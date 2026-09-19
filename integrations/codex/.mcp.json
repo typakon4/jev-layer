@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "jev": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./run-mcp.mjs"],
+      "cwd": ".",
+      "env_vars": ["JEV_LAYER_ROOT", "JEV_LAYER_PROVIDER", "OPENROUTER_API_KEY"]
+    }
+  }
+}

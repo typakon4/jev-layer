@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20.x, 22.x, 24.x]
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install
+        run: npm install
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Smoke
+        run: npm run smoke
+
+      - name: Fail-open smoke
+        run: npm run fail-open-smoke
+
+      - name: Clean-install smoke
+        run: npm run clean-install-smoke
+
+      - name: Package, secret, and content checks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git grep -nI -E -- '-----BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----|AKIA[0-9A-Z]{16}|(ghp_|github_pat_|sk-)[A-Za-z0-9_\-]{20,}' -- ':!package-lock.json'; then
+            echo "Possible credential material found in tracked source."
+            exit 1
+          fi
+
+          npm pack --dry-run --json > pack.json
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+
+          const report = JSON.parse(readFileSync("pack.json", "utf8"));
+          const files = report.flatMap((entry) => entry.files ?? []).map((entry) => entry.path);
+          const required = ["LICENSE", "README.md", "CONTRIBUTING.md", "SECURITY.md", "RELEASE.md"];
+          const missing = required.filter((name) => !files.includes(name));
+          const unsafe = files.filter((name) => name.includes("node_modules/") || name.includes("__pycache__/") || name.endsWith(".pyc") || name.includes(".jev/") || name.endsWith(".env") || name.startsWith("../") || name.includes(".git/"));
+          if (missing.length || unsafe.length) {
+            console.error({ missing, unsafe });
+            process.exit(1);
+          }
+          NODE
+          rm -f pack.json

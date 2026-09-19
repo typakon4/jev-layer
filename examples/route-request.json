@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "harness": "example",
+  "intent": "Find where the routing decision is implemented in this repository",
+  "context": {
+    "workspace": "jev-layer",
+    "api_key": "must-not-reach-provider"
+  },
+  "actor_permissions": ["read"],
+  "capabilities": [
+    {
+      "id": "repo_search",
+      "kind": "mcp",
+      "name": "Repository search",
+      "description": "Search repository files and symbols without changing files",
+      "permissions": ["read"],
+      "risk": "low"
+    },
+    {
+      "id": "file_write",
+      "kind": "tool",
+      "name": "File writer",
+      "description": "Modify files in the repository",
+      "permissions": ["write"],
+      "risk": "high"
+    }
+  ]
+}

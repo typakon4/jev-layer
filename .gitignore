@@ -1,0 +1,26 @@
+.jev/
+node_modules/
+coverage/
+*.tgz
+
+# Local credentials and environment files
+.env
+.env.*
+!.env.example
+
+# Generated Python and OS/editor files
+__pycache__/
+*.py[cod]
+.DS_Store
+*.swp
+*.swo
+
+# Package-manager logs
+npm-debug.log*
+
+# Local harness configuration
+.codex/
+.omp/
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

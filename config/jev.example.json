@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "provider": "demo",
+  "replay_cases": ".jev/replay/cases.jsonl",
+  "features": {
+    "browser_fast_path": false,
+    "supervision": false,
+    "context_filter": null
+  },
+  "providers": {
+    "openrouter": {
+      "api_key_env": "OPENROUTER_API_KEY",
+      "endpoint_env": "OPENROUTER_DECISIONS_ENDPOINT",
+      "model_env": "OPENROUTER_DECISIONS_MODEL"
+    },
+    "typesafe": {
+      "api_key_env": "TYPESAFE_API_KEY",
+      "endpoint_env": "TYPESAFE_ENDPOINT",
+      "model_env": "TYPESAFE_MODEL"
+    }
+  }
+}

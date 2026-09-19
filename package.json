@@ -1,0 +1,60 @@
+{
+  "name": "jev-layer",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/typakon4/jev-layer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/typakon4/jev-layer/issues"
+  },
+  "homepage": "https://github.com/typakon4/jev-layer#readme",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "jev": "./bin/jev.mjs"
+  },
+  "files": [
+    "bin/",
+    "config/",
+    "docs/",
+    "examples/",
+    "integrations/",
+    "scripts/",
+    "src/",
+    "test/",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "README.md",
+    "README.ru.md",
+    "README.zh-CN.md",
+    "RELEASE.md",
+    "SECURITY.md",
+    "package.json",
+    "package-lock.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "jev": "node bin/jev.mjs",
+    "test": "node --test test/*.test.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "benchmark": "node scripts/benchmark.mjs",
+    "openrouter:choice": "node scripts/openrouter-choice.mjs",
+    "mcp": "node src/mcp-server.mjs",
+    "fail-open-smoke": "node scripts/fail-open-smoke.mjs",
+    "codex:mcp-smoke": "node scripts/codex-mcp-smoke.mjs",
+    "replay:evaluate": "node scripts/replay-eval.mjs",
+    "receipt:mcp-smoke": "node scripts/mcp-receipt-smoke.mjs",
+    "browser:e2e": "node scripts/browser-e2e.mjs",
+    "browser:benchmark": "node scripts/browser-benchmark.mjs",
+    "supervision:e2e": "node scripts/supervision-e2e.mjs",
+    "context-filter:e2e": "node scripts/context-filter-e2e.mjs",
+    "capability:e2e": "node scripts/capability-e2e.mjs",
+    "feature-flags:smoke": "node scripts/feature-flags-smoke.mjs",
+    "clean-install-smoke": "node scripts/clean-install-smoke.mjs"
+  }
+}

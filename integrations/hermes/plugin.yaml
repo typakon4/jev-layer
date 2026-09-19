@@ -1,0 +1,5 @@
+name: jev-layer
+version: 0.1.0
+description: Host-owned Jev capability routing through the standalone jev-layer core
+provides_tools:
+  - jev_route

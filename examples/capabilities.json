@@ -1,0 +1,39 @@
+[
+  {
+    "id": "repo_search",
+    "kind": "mcp",
+    "name": "Repository search",
+    "description": "Search repository files and symbols without changing files",
+    "permissions": ["read"],
+    "risk": "low",
+    "execution": { "target": "host-native-repository-search" }
+  },
+  {
+    "id": "browser_inspect",
+    "kind": "mcp",
+    "name": "Browser inspection",
+    "description": "Open a webpage and inspect visible browser state",
+    "permissions": ["browser"],
+    "risk": "medium",
+    "execution": { "target": "host-native-browser" }
+  },
+  {
+    "id": "terminal_read",
+    "kind": "cli",
+    "name": "Read-only terminal",
+    "description": "Run a read-only shell command and return its output",
+    "permissions": ["terminal:read"],
+    "risk": "low",
+    "execution": { "target": "host-native-terminal" }
+  },
+  {
+    "id": "file_write",
+    "kind": "tool",
+    "name": "File writer",
+    "description": "Modify files in the repository",
+    "permissions": ["write"],
+    "risk": "high",
+    "execution": { "target": "host-native-write" },
+    "policy": { "requires_confirmation": true }
+  }
+]

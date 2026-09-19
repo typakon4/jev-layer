@@ -1,0 +1,1 @@
+When this adapter is enabled, use `jev_route` only for bounded closed-set capability routing. The tool returns an identifier; Codex owns all execution and approvals. On fallback, low confidence, malformed response, unavailable capability, or timeout, continue with normal Codex planning. Never send secrets or full transcripts to Jev.
