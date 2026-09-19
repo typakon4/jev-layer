@@ -1,33 +1,49 @@
-# jev-layer
+<p align="center">
+  <img src="docs/jev-layer-banner.svg" alt="jev-layer — портируемый System-1 слой решений для agent harnesses" width="960">
+</p>
 
-[English](README.md) | [Русский](README.ru.md) | [简体中文](README.zh-CN.md)
+<h1 align="center">jev-layer</h1>
 
-Портируемый **System-1 слой принятия решений для agent harnesses**. jev-layer маршрутизирует ограниченные решения и сохраняет доказательства; harness сохраняет владение исполнением, разрешениями, подтверждениями, retry, восстановлением и итоговым результатом.
+<p align="center">
+  <strong>Портируемый System-1 слой решений для agent harnesses.</strong><br>
+  Host владеет routing, receipts, replay и fail-open интеграциями.
+</p>
 
-Поддерживаются примеры интеграций **Hermes, OMP, Codex и generic MCP-compatible agents**.
+<p align="center">
+  Hermes · OMP · Codex · generic MCP
+</p>
+
+<p align="center">
+  <a href="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI status" src="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm version" src="https://img.shields.io/npm/v/jev-layer?logo=npm&amp;label=npm"></a>
+  <a href="https://github.com/typakon4/jev-layer/releases"><img alt="latest GitHub release" src="https://img.shields.io/github/v/release/typakon4/jev-layer?display_name=tag&amp;sort=semver"></a>
+  <a href="https://github.com/typakon4/jev-layer/blob/main/LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/typakon4/jev-layer"></a>
+  <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm downloads per month" src="https://img.shields.io/npm/dm/jev-layer?logo=npm&amp;label=downloads"></a>
+</p>
+
+[English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
+
+jev-layer маршрутизирует ограниченные решения и сохраняет доказательства; harness сохраняет владение исполнением, permissions, approvals, retry, восстановлением и итоговым результатом.
 
 ## Архитектура
 
-```text
-+----------------------+       ограниченный запрос  +----------------------+
-| Agent harness        | --------------------------> | jev-layer            |
-| Hermes / OMP /       |                            | route / supervise /  |
-| Codex / generic MCP  | <-------------------------- | context filter        |
-+----------+-----------+       решение + id          +----------+-----------+
-           |                                                  |
-           | host проверяет permissions/approval              |
-           v                                                  v
-+----------+-----------+       результат исполнения +----------+-----------+
-| Native host executor | --------------------------> | receipts + replay   |
-| владеет side effects |   jev_record_execution     | JSONL, correlation_id|
-+----------------------+                            +----------------------+
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Архитектура: harness отправляет ограниченный запрос в jev-layer; host владеет permissions и execution; receipts поддерживают replay." width="960">
+</p>
 
 Jev не исполняет выбранную capability. Доступны детерминированный `demo`, OpenRouter Decisions и TypeSafe; тесты с provider credentials не требуются для обычного CI.
 
 ## Быстрый старт
 
 Требуется Node.js 20 или новее. Обязательных runtime-зависимостей нет.
+
+Установить опубликованный CLI:
+
+```sh
+npm install --global jev-layer
+```
+
+Или использовать локальный clone:
 
 ```sh
 npm install

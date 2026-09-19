@@ -1,33 +1,49 @@
-# jev-layer
+<p align="center">
+  <img src="docs/jev-layer-banner.svg" alt="jev-layer — 面向 agent harness 的可移植 System-1 决策层" width="960">
+</p>
 
-[English](README.md) | [Русский](README.ru.md) | [简体中文](README.zh-CN.md)
+<h1 align="center">jev-layer</h1>
 
-面向 agent harness 的可移植 **System-1 决策层**。jev-layer 只负责路由有界决策并记录证据；host 保留执行、权限、审批、重试、恢复和最终结果的所有权。
+<p align="center">
+  <strong>面向 agent harness 的可移植 System-1 决策层。</strong><br>
+  Host 保留 routing、receipts、replay 和 fail-open 集成的所有权。
+</p>
 
-提供 **Hermes、OMP、Codex 和 generic MCP-compatible agents** 的集成示例。
+<p align="center">
+  Hermes · OMP · Codex · generic MCP
+</p>
+
+<p align="center">
+  <a href="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI status" src="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm version" src="https://img.shields.io/npm/v/jev-layer?logo=npm&amp;label=npm"></a>
+  <a href="https://github.com/typakon4/jev-layer/releases"><img alt="latest GitHub release" src="https://img.shields.io/github/v/release/typakon4/jev-layer?display_name=tag&amp;sort=semver"></a>
+  <a href="https://github.com/typakon4/jev-layer/blob/main/LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/typakon4/jev-layer"></a>
+  <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm downloads per month" src="https://img.shields.io/npm/dm/jev-layer?logo=npm&amp;label=downloads"></a>
+</p>
+
+[English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
+
+jev-layer 只负责路由有界决策并记录证据；host 保留执行、权限、审批、重试、恢复和最终结果的所有权。
 
 ## 架构
 
-```text
-+----------------------+       有界请求            +----------------------+
-| Agent harness        | --------------------------> | jev-layer            |
-| Hermes / OMP /       |                            | route / supervise /  |
-| Codex / generic MCP  | <-------------------------- | context filter        |
-+----------+-----------+       决策 + id             +----------+-----------+
-           |                                                  |
-           | host 检查权限和审批                              |
-           v                                                  v
-+----------+-----------+       执行结果             +----------+-----------+
-| Native host executor | --------------------------> | receipts + replay   |
-| 负责所有副作用       |   jev_record_execution     | JSONL, correlation_id|
-+----------------------+                            +----------------------+
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="架构：agent harness 向 jev-layer 发送有界请求；host 负责权限和执行；receipts 支持 replay。" width="960">
+</p>
 
 Jev 从不执行选中的 capability。可使用离线确定性的 `demo`、OpenRouter Decisions 或 TypeSafe；普通 CI 不需要 provider credentials。
 
 ## 快速开始
 
 需要 Node.js 20 或更新版本。没有必需的 runtime 依赖。
+
+安装已发布的 CLI：
+
+```sh
+npm install --global jev-layer
+```
+
+或者使用本地 clone：
 
 ```sh
 npm install

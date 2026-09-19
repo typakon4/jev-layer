@@ -1,33 +1,49 @@
-# jev-layer
+<p align="center">
+  <img src="docs/jev-layer-banner.svg" alt="jev-layer — portable System-1 decisions for agent harnesses" width="960">
+</p>
 
-[English](README.md) | [Русский](README.ru.md) | [简体中文](README.zh-CN.md)
+<h1 align="center">jev-layer</h1>
 
-Portable **System-1 decision layer for agent harnesses**. jev-layer routes bounded choices and records evidence; the host keeps execution, permissions, approvals, retries, recovery, and final results.
+<p align="center">
+  <strong>Portable System-1 decision layer for agent harnesses.</strong><br>
+  Host-owned routing, receipts, replay, and fail-open integrations.
+</p>
 
-Supported integration examples: **Hermes, OMP, Codex, and generic MCP-compatible agents**.
+<p align="center">
+  Hermes · OMP · Codex · generic MCP
+</p>
+
+<p align="center">
+  <a href="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI status" src="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm version" src="https://img.shields.io/npm/v/jev-layer?logo=npm&amp;label=npm"></a>
+  <a href="https://github.com/typakon4/jev-layer/releases"><img alt="latest GitHub release" src="https://img.shields.io/github/v/release/typakon4/jev-layer?display_name=tag&amp;sort=semver"></a>
+  <a href="https://github.com/typakon4/jev-layer/blob/main/LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/typakon4/jev-layer"></a>
+  <a href="https://www.npmjs.com/package/jev-layer"><img alt="npm downloads per month" src="https://img.shields.io/npm/dm/jev-layer?logo=npm&amp;label=downloads"></a>
+</p>
+
+[English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
+
+jev-layer routes bounded choices and records evidence; the host keeps execution, permissions, approvals, retries, recovery, and final results.
 
 ## Architecture
 
-```text
-+----------------------+      bounded request       +----------------------+
-| Agent harness        | --------------------------> | jev-layer            |
-| Hermes / OMP /       |                            | route / supervise /  |
-| Codex / generic MCP  | <-------------------------- | context filter        |
-+----------+-----------+      decision + id          +----------+-----------+
-           |                                                  |
-           | host validates permissions/approval              |
-           v                                                  v
-+----------+-----------+      execution result       +----------+-----------+
-| Native host executor | --------------------------> | receipts + replay   |
-| owns all side effects|   jev_record_execution     | JSONL, correlation_id|
-+----------------------+                            +----------------------+
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Architecture: agent harnesses send bounded requests to jev-layer; the host owns permissions and execution; receipts support replay." width="960">
+</p>
 
 Jev never executes a selected capability. A provider can be deterministic `demo`, OpenRouter Decisions, or TypeSafe; provider-backed tests are not required for normal CI.
 
 ## Quick Start
 
 Requirements: Node.js 20 or newer. There are no mandatory runtime dependencies.
+
+Install the published CLI:
+
+```sh
+npm install --global jev-layer
+```
+
+Or use a local clone:
 
 ```sh
 npm install
