@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { stableJson } from "./contract.mjs";
-import { DemoProvider } from "./providers/demo.mjs";
-import { OpenRouterDecisionsProvider, TypeSafeProvider } from "./providers/typesafe.mjs";
+import { resolveProvider } from "./providers/index.mjs";
 import { appendSupervisionReceipt } from "./receipts.mjs";
 
 export const SUPERVISION_ENV = "JEV_SUPERVISION";
@@ -104,6 +103,7 @@ export async function superviseWork({
   actor_permissions,
   policy,
   provider = "demo",
+  config,
   enabled,
   attempts = 0,
   receiptPath,
@@ -124,7 +124,7 @@ export async function superviseWork({
   if (!supervisionEnabled({ enabled })) return finalize(base, started, "disabled", 0);
   let resolved;
   try {
-    resolved = resolveProvider(provider);
+    resolved = resolveProvider(provider, { config });
     if (!resolved || typeof resolved.evaluate !== "function") throw new Error("provider does not support supervision evaluation");
   } catch (error) {
     return finalize(base, started, "provider_error", 1, error);
@@ -175,14 +175,6 @@ export async function superviseWork({
     }
   }
   return result;
-}
-
-function resolveProvider(provider) {
-  if (provider && typeof provider === "object") return provider;
-  if (provider === "demo") return new DemoProvider();
-  if (provider === "openrouter") return new OpenRouterDecisionsProvider();
-  if (provider === "typesafe") return new TypeSafeProvider();
-  throw new Error(`unsupported provider: ${provider}`);
 }
 
 function finalize(result, started, reason, jevCalls, error = null) {

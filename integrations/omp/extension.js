@@ -36,7 +36,7 @@ async function runCore(payload, signal) {
 }
 
 async function runCoreWithBun(payload, signal) {
-  const child = Bun.spawn([process.env.JEV_NODE ?? "node", CORE, "--provider", process.env.JEV_LAYER_PROVIDER ?? "demo"], {
+  const child = Bun.spawn([process.env.JEV_NODE ?? "node", CORE], {
     cwd: process.cwd(),
     env: process.env,
     stdin: "pipe",
@@ -58,7 +58,7 @@ async function runCoreWithBun(payload, signal) {
 
 function runCoreWithNode(payload, signal) {
   return new Promise((resolve) => {
-    const child = spawn(process.env.JEV_NODE ?? "node", [CORE, "--provider", process.env.JEV_LAYER_PROVIDER ?? "demo"], {
+    const child = spawn(process.env.JEV_NODE ?? "node", [CORE], {
       cwd: process.cwd(),
       env: process.env,
       stdio: ["pipe", "pipe", "pipe"],

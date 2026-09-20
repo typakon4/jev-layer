@@ -2,8 +2,7 @@ import { byteLength, decisionEnvelope, normalizeRequest } from "./contract.mjs";
 import { projectState } from "./context-filter.mjs";
 import { discoverCapabilities } from "./discovery.mjs";
 import { decisionCandidates, DEFAULT_POLICY, deterministicCandidate, filterCapabilities, normalizeCapabilities } from "./registry.mjs";
-import { DemoProvider } from "./providers/demo.mjs";
-import { OpenRouterDecisionsProvider, TypeSafeProvider } from "./providers/typesafe.mjs";
+import { resolveProvider } from "./providers/index.mjs";
 
 export async function routeRequest(input, options = {}) {
   const discovered = options.discovery ? discoverCapabilities(options.discovery) : [];
@@ -15,9 +14,8 @@ export async function routeRequest(input, options = {}) {
   const capabilities = normalizeCapabilities(request.capabilities);
   const { policy, assessments, eligible } = filterCapabilities(capabilities, request, effectivePolicy);
   const projection = projectState(request, eligible, options.maxContextBytes ?? 6_000, { mode: options.contextFilterMode });
-  const provider = resolveProvider(options.provider ?? "demo", options);
   const base = {
-    provider: provider.name,
+    provider: typeof options.provider === "string" ? options.provider : options.provider?.name ?? "jev-demo",
     candidateCount: eligible.length,
     contextBytes: projection.context_bytes,
     started,
@@ -25,6 +23,13 @@ export async function routeRequest(input, options = {}) {
 
   if (process.env.JEV_LAYER_ENABLED === "0") {
     return fallback(base, assessments, "disabled", "Jev layer disabled by JEV_LAYER_ENABLED=0", projection.state);
+  }
+  let provider;
+  try {
+    provider = resolveProvider(options.provider ?? "demo", options);
+    base.provider = provider.name;
+  } catch (error) {
+    return fallback(base, assessments, "provider_error", error instanceof Error ? error.message : String(error), projection.state);
   }
   if (eligible.length === 0) {
     return decisionEnvelope({
@@ -121,13 +126,6 @@ export async function routeRequest(input, options = {}) {
     confidence: answer.confidence,
     rawJev: raw,
   });
-}
-
-function resolveProvider(provider, options) {
-  if (provider && typeof provider === "object" && typeof provider.decide === "function") return provider;
-  if (provider === "demo") return new DemoProvider();
-  if (provider === "openrouter") return new OpenRouterDecisionsProvider(options.openrouter);
-  throw new Error(`unsupported provider: ${provider}`);
 }
 
 function readChoiceAnswer(raw) {

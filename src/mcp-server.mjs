@@ -125,6 +125,7 @@ async function route(args, id) {
   const decision = await routeRequest(request, {
     provider,
     engine,
+    config,
     contextFilterMode: request.policy?.context_filter_mode ?? config.features?.context_filter,
   });
   return persistDecision(request, decision, id);
@@ -133,6 +134,7 @@ async function route(args, id) {
 async function browserStep(args, id) {
   const { provider: requestedProvider, enabled, ...input } = args;
   const routed = await decideBrowserStep(input, {
+    config,
     enabled: enabled ?? config.features?.browser_fast_path,
     provider: configuredProvider(config, requestedProvider),
   });
@@ -152,6 +154,7 @@ async function supervise(args, id) {
   const { provider: requestedProvider, enabled, ...input } = args;
   const result = await superviseWork({
     ...input,
+    config,
     enabled: enabled ?? config.features?.supervision,
     provider: configuredProvider(config, requestedProvider),
     receiptPath: CASES_PATH,

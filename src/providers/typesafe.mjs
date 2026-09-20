@@ -1,13 +1,12 @@
-import { stableJson } from "../contract.mjs";
-
 export class TypeSafeProvider {
   name = "typesafe";
 
-  constructor({ apiKey = process.env.TYPESAFE_API_KEY, endpoint = process.env.TYPESAFE_ENDPOINT ?? "https://api.typesafe.ai/v1/systemone", model = process.env.TYPESAFE_MODEL ?? "jev-latest", timeoutMs = 2_000 } = {}) {
+  constructor({ apiKey = process.env.TYPESAFE_API_KEY, endpoint = process.env.TYPESAFE_ENDPOINT ?? "https://api.typesafe.ai/v1/systemone", model = process.env.TYPESAFE_MODEL ?? "jev-latest", timeoutMs = 2_000, fetchImpl = globalThis.fetch } = {}) {
     this.apiKey = apiKey;
     this.endpoint = endpoint;
     this.model = model;
     this.timeoutMs = timeoutMs;
+    this.fetchImpl = fetchImpl;
   }
 
   async decide({ state, candidates }) {
@@ -31,7 +30,8 @@ export class TypeSafeProvider {
 
   async evaluate({ state, questions }) {
     if (!this.apiKey) throw new Error("TYPESAFE_API_KEY is not configured");
-    const response = await fetch(this.endpoint, {
+    if (typeof this.fetchImpl !== "function") throw new Error("fetch is unavailable");
+    const response = await this.fetchImpl(this.endpoint, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
@@ -57,8 +57,6 @@ export class TypeSafeProvider {
 }
 
 export class OpenRouterDecisionsProvider {
-  name = "openrouter:typesafe/jev-1.13";
-
   constructor({
     apiKey = process.env.OPENROUTER_API_KEY,
     endpoint = process.env.OPENROUTER_DECISIONS_ENDPOINT ?? "https://openrouter.ai/api/alpha/decisions",
@@ -68,12 +66,14 @@ export class OpenRouterDecisionsProvider {
     httpReferer = process.env.OPENROUTER_HTTP_REFERER,
     appTitle = process.env.OPENROUTER_APP_TITLE,
   } = {}) {
+    this.name = `openrouter:${model}`;
     this.apiKey = apiKey;
     this.endpoint = endpoint;
     this.model = model;
     this.timeoutMs = timeoutMs;
     this.fetchImpl = fetchImpl;
     this.httpReferer = httpReferer;
+    this.appTitle = appTitle;
   }
   async decide({ state, candidates }) {
     const criteria = Object.fromEntries(candidates.map((candidate) => [candidate.id, {

@@ -70,6 +70,8 @@ export OPENROUTER_API_KEY='provided-by-your-secret-store'
 jev doctor --project /path/to/workspace
 ```
 
+All three modes (`demo`, `openrouter`, and direct `typesafe`), their endpoints, and configuration precedence are documented in the [provider guide](docs/PROVIDERS.md).
+
 ## Core surfaces
 
 - **Routing:** `jev_route` selects one capability from the host-supplied candidate set. Selection is advisory; the host validates the id and permissions.

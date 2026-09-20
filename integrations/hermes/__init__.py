@@ -29,11 +29,11 @@ def jev_route(args: dict, **kwargs) -> str:
     """Return a bounded decision as JSON; never execute the selected target."""
     try:
         completed = subprocess.run(
-            [os.environ.get("JEV_NODE", "node"), str(CLI), "--provider", os.environ.get("JEV_LAYER_PROVIDER", "demo")],
+            [os.environ.get("JEV_NODE", "node"), str(CLI)],
             input=json.dumps(args) + "\n",
             capture_output=True,
             text=True,
-            timeout=float(os.environ.get("JEV_LAYER_TIMEOUT_S", "3")),
+            timeout=float(os.environ.get("JEV_LAYER_TIMEOUT_S", "10")),
             check=False,
         )
         if completed.returncode != 0:
