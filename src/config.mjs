@@ -46,6 +46,16 @@ export function configuredProvider(config, explicitProvider) {
   return explicitProvider ?? process.env.JEV_LAYER_PROVIDER ?? config?.provider ?? DEFAULT_CONFIG.provider;
 }
 
+export function configuredProviderOptions(config, provider) {
+  if (!config?.providers?.[provider]) return {};
+  const names = { ...DEFAULT_CONFIG.providers[provider], ...config.providers[provider] };
+  return {
+    apiKey: process.env[names.api_key_env] ?? "",
+    endpoint: process.env[names.endpoint_env],
+    model: process.env[names.model_env],
+  };
+}
+
 export function configuredReplayPath(config) {
   return process.env.JEV_REPLAY_CASES ?? config?.replay_cases ?? DEFAULT_CONFIG.replay_cases;
 }

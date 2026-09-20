@@ -2,6 +2,15 @@
 
 All notable changes to jev-layer are recorded here. Entries describe public behavior and compatibility impact; provider-specific experiments are listed only when they affect a public contract.
 
+## Unreleased
+
+### Fixed
+
+- Route `typesafe` through the official System One provider; share provider resolution with supervision and preserve fail-open decisions for unsupported providers.
+- Apply configured provider environment names in CLI/MCP, including supervision and browser decisions; let Hermes/OMP honor project provider selection.
+- Send OpenRouter's optional app title and record the configured model in provider metadata; allow the Hermes process to outlive the provider HTTP timeout.
+- Cover demo, OpenRouter, and TypeSafe routing with offline provider and CLI/MCP/adapter regression checks; document setup and configuration precedence.
+
 ## [0.1.0]
 
 First public-release candidate. This version is prepared but has not been pushed, released on GitHub, or published to npm.

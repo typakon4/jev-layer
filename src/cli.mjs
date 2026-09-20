@@ -14,7 +14,7 @@ for await (const line of lines) {
   try {
     const request = JSON.parse(line);
     const { provider = args.provider ?? configuredProvider(config), engine = args.engine ?? "native", ...payload } = request;
-    const decision = await routeRequest(payload, { provider, engine });
+    const decision = await routeRequest(payload, { provider, engine, config });
     process.stdout.write(`${JSON.stringify(decision)}\n`);
   } catch (error) {
     process.stdout.write(`${JSON.stringify({ status: "error", reason: error instanceof Error ? error.message : String(error), execution: { enabled: false, status: "not_started" } })}\n`);

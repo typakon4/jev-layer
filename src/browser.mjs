@@ -106,6 +106,7 @@ export async function decideBrowserStep(input, options = {}) {
   }
   const decision = await routeRequest(request, {
     provider: options.provider ?? "demo",
+    config: options.config,
     engine: options.engine ?? "native",
     policy: options.policy,
     maxContextBytes: options.maxContextBytes,

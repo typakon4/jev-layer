@@ -70,6 +70,8 @@ export OPENROUTER_API_KEY='provided-by-your-secret-store'
 jev doctor --project /path/to/workspace
 ```
 
+三种模式（`demo`、`openrouter` 和直连 `typesafe`）、端点及配置优先级见[提供商指南](docs/PROVIDERS.md)。
+
 ## 核心能力
 
 - **Routing：** `jev_route` 从 host 提供的候选集合中选择一个 capability。host 会再次验证 id 和权限。
