@@ -66,9 +66,38 @@ try {
   assert.equal(result.metrics.jev_calls, 1);
   assert.ok(result.receipt.correlation_id);
 
+  const contradictory = await request(5, "tools/call", {
+    name: "jev_supervise",
+    arguments: {
+      enabled: true,
+      provider: process.env.JEV_SUPERVISION_PROVIDER ?? "demo",
+      harness: "supervision-e2e",
+      job: { requirements: ["run tests"] },
+      observation: { status: "claimed-complete" },
+      evidence: {
+        tests_passed: true,
+        tests_failed: true,
+        judgments: {
+          requirements_addressed: 0.9,
+          verification_needed: 0.1,
+          meaningful_progress: 0.9,
+          worker_stuck: 0.05,
+          work_off_track: 0.05,
+          completion: 0.9,
+        },
+      },
+    },
+  });
+  const contradictoryResult = contradictory.result.structuredContent;
+  assert.equal(contradictoryResult.status, "judged");
+  assert.equal(contradictoryResult.action, "verify");
+  assert.equal(contradictoryResult.evidence_state.state, "contradictory");
+
   const records = (await readFile(casesPath, "utf8")).trim().split(/\r?\n/).map(JSON.parse);
-  assert.deepEqual(records.map((record) => record.record_type), ["supervision_case"]);
+  assert.deepEqual(records.map((record) => record.record_type), ["supervision_case", "supervision_case"]);
   assert.equal(records[0].supervision.action, "finish");
+  assert.equal(records[1].supervision.action, "verify");
+  assert.equal(records[1].supervision.evidence_state.state, "contradictory");
   const replayed = deterministicSupervisionPolicy({
     assessment: records[0].supervision.assessment,
     evidence: records[0].request.context.evidence,

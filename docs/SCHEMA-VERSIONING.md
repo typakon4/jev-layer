@@ -21,6 +21,8 @@ The MCP server currently exposes these stable tool names:
 - `jev_route`
 - `jev_browser_step` (experimental, opt-in)
 - `jev_supervise` (experimental, opt-in)
+- `jev_model_route` (report-only; experimental, opt-in)
+- `jev_shadow_compaction` (report-only; experimental, opt-in)
 - `jev_record_execution`
 
 Their input and structured output are v1. Additive optional properties are compatible. Renaming a tool, changing a required property, changing the meaning of a status, or changing who owns execution requires a new tool/schema version and adapter migration. Keep `tools/list`, `initialize`, and stdio JSON-RPC behavior backward compatible for v1 clients.
@@ -66,7 +68,7 @@ A v1 replay file is JSONL. Supported records include:
 - `record_type: "execution_receipt"`
 - `record_type: "supervision_case"`
 
-Routing cases retain a sanitized request and a decision summary. Replay reads cases without calling host tools. New optional record fields are compatible; changing record type, correlation semantics, or the meaning of a recorded status requires a new replay schema and migration.
+Routing cases retain a sanitized request and a decision summary. `supervision_case.supervision.evidence_state` is an optional v1 object with `state` (`present`, `missing`, or `contradictory`) and bounded source labels. Replay reads cases without calling host tools. New optional record fields are compatible; changing record type, correlation semantics, or the meaning of a recorded status requires a new replay schema and migration.
 
 ## Adapter contract
 

@@ -44,15 +44,19 @@ test("Hermes adapter routes a closed candidate set and records a correlated rece
   assert.equal(records.filter((record) => record.record_type === "execution_receipt").length, 1);
 });
 
-test("Hermes adapter exposes supervision and browser surfaces without execution", async () => {
+test("Hermes adapter exposes supervision, shadow-compaction, and browser surfaces without execution", async () => {
   const dir = await mkdtemp(join(tmpdir(), "jev-hermes-adapter-"));
   const replayPath = join(dir, "cases.jsonl");
-  const [supervision, browser] = await run([
+  const [supervision, shadow, browser] = await run([
     { operation: "supervise", args: { provider: "demo", enabled: true, harness: "hermes-test", job: { goal: "verify" }, observation: { state: "done" }, evidence: { tests_passed: true } } },
+    { operation: "shadow_compaction", args: { provider: "demo", intent: "review context", context: { messages: ["old note", "Requirement: preserve /workspace/project/config.json"] } } },
     { operation: "browser_step", args: { provider: "demo", enabled: true, harness: "hermes-test", goal: "Open the visible docs link", observation: { url: "https://example.test", targets: [{ id: "docs", name: "Docs", href: "/docs", visible: true, clickable: true }], tabs: [], scroll: { down: false, up: false } } } },
   ], replayPath);
   assert.equal(supervision.status, "judged");
   assert.ok(["continue", "verify", "retry", "finish", "escalate"].includes(supervision.action));
+  assert.equal(shadow.mode, "jev_shadow");
+  assert.equal(shadow.changed, false);
+  assert.equal(shadow.protected_count, 1);
   assert.ok(["selected", "fallback", "no_decision", "needs_confirmation"].includes(browser.status));
   assert.equal(browser.execution.enabled, false);
 });

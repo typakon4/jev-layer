@@ -76,7 +76,9 @@ jev doctor --project /path/to/workspace
 
 - **Routing:** `jev_route` выбирает одну capability из набора, предоставленного host. Host повторно проверяет id и permissions.
 - **Receipts/replay:** `jev_record_execution` связывает результат host с исходным `correlation_id`. JSONL-файлы находятся в `.jev/replay/cases.jsonl` и проверяются офлайн через `npm run replay:evaluate`.
-- **Supervision:** `jev_supervise` возвращает ограниченные judgments о состоянии работы; детерминированная host policy преобразует их в `continue`, `verify`, `retry`, `finish` или `escalate`. Jev эти действия не выполняет.
+- **Supervision:** `jev_supervise` возвращает ограниченные judgments о состоянии работы; детерминированная host policy преобразует их в `continue`, `verify`, `retry`, `finish` или `escalate`. Receipt хранит детерминированный `evidence_state`: `present`, `missing` или `contradictory`. Противоречивые evidence не могут привести к `finish`. Jev эти действия не выполняет.
+- **Model routing:** `jev_model_route` возвращает одну рекомендацию из model profiles, которые объявил host, для следующего model call. Это только shadow: прежде чем менять provider/model setting, host обязан измерить outcome, retry, latency и cost. Решение связывается с последующим `jev_record_execution` по `correlation_id`; host записывает `result.model_route = { actual_model_id, retry_count, outcome }`, затем `npm run model-route:report -- /path/to/cases.jsonl` строит read-only evidence report.
+- **Shadow compaction:** `jev_shadow_compaction` делает пакетный консервативный report с keep/drop-кандидатами для context, который передал host. Он никогда не меняет, не суммаризирует и не удаляет context; path, error, command и requirement pin-ятся до provider review, а provider failure оставляет все остальные items.
 - **Context filtering:** опциональная детерминированная фильтрация `shadow` или `conservative` убирает устаревший context без LLM-суммаризации.
 - **Experimental browser fast-path:** `jev_browser_step` выбирает одно ограниченное действие из observation host. Host предоставляет observation, approval, native execution и recovery.
 - **Fail-open:** при отключённом, недоступном, ошибочном или неубедительном Jev вызове управление возвращается в обычный host path. Jev не расширяет permissions и не угадывает execution.
@@ -93,7 +95,7 @@ JEV_CONTEXT_FILTER=shadow jev cli --input examples/route-request.json
 
 Примеры находятся в `integrations/`:
 
-- `integrations/hermes/`
+- `integrations/hermes/` — для active plugin topology и safe change workflow см. [handoff локальному агенту (RU)](docs/HERMES-LOCAL-AGENT-HANDOFF.ru.md).
 - `integrations/omp/`
 - `integrations/codex/`
 - `integrations/template/`

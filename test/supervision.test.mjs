@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import {
+  deterministicEvidenceState,
   deterministicSupervisionPolicy,
   normalizeAssessment,
   superviseWork,
@@ -52,11 +53,26 @@ test("supervision contract exposes bounded dimensions and parses Noul answers", 
   });
 });
 
+test("deterministic evidence state distinguishes proof, absence, and contradiction", () => {
+  assert.deepEqual(deterministicEvidenceState({}), { state: "missing", sources: [] });
+  assert.deepEqual(deterministicEvidenceState({ tests_passed: true, receipts: [{ id: "test:1", status: "completed" }] }), {
+    state: "present",
+    sources: ["tests_passed", "receipt:test:1"],
+  });
+  assert.deepEqual(deterministicEvidenceState({ tests_passed: true, tests_failed: true }), {
+    state: "contradictory",
+    sources: ["tests_passed", "tests_failed"],
+  });
+});
+
 test("deterministic host policy owns the supervision action", () => {
   assert.equal(deterministicSupervisionPolicy({ assessment: assessment({ verification_needed: 0.9 }) }).action, "verify");
   assert.equal(deterministicSupervisionPolicy({ assessment: assessment({ worker_stuck: 0.9 }), attempts: 0 }).action, "retry");
   assert.equal(deterministicSupervisionPolicy({ assessment: assessment({ worker_stuck: 0.9 }), attempts: 2 }).action, "escalate");
   assert.equal(deterministicSupervisionPolicy({ assessment: assessment(), evidence: { tests_passed: true } }).action, "finish");
+  const contradiction = deterministicSupervisionPolicy({ assessment: assessment(), evidence: { tests_passed: true, tests_failed: true } });
+  assert.equal(contradiction.action, "verify");
+  assert.match(contradiction.reason, /contradictory/);
 });
 
 test("supervision is opt-in, fail-open, and records replayable judgments", async () => {
@@ -91,9 +107,11 @@ test("supervision is opt-in, fail-open, and records replayable judgments", async
   assert.equal(result.action, "finish");
   assert.equal(result.metrics.jev_calls, 1);
   assert.equal(result.metrics.cost_usd, 0.0003);
+  assert.deepEqual(result.evidence_state, { state: "present", sources: ["tests_passed"] });
   const cases = await readSupervisionCases(path);
   assert.equal(cases.length, 1);
   assert.equal(cases[0].record_type, "supervision_case");
   assert.equal(cases[0].supervision.action, "finish");
+  assert.deepEqual(cases[0].supervision.evidence_state, { state: "present", sources: ["tests_passed"] });
   assert.equal(JSON.parse(await readFile(path, "utf8")).record_type, "supervision_case");
 });

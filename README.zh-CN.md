@@ -76,7 +76,8 @@ jev doctor --project /path/to/workspace
 
 - **Routing：** `jev_route` 从 host 提供的候选集合中选择一个 capability。host 会再次验证 id 和权限。
 - **Receipts/replay：** `jev_record_execution` 使用原始 `correlation_id` 关联 host 结果。JSONL 位于 `.jev/replay/cases.jsonl`，可用 `npm run replay:evaluate` 离线评估。
-- **Supervision：** `jev_supervise` 返回有界的工作状态判断；确定性的 host policy 将其映射为 `continue`、`verify`、`retry`、`finish` 或 `escalate`。Jev 不执行这些动作。
+- **Supervision：** `jev_supervise` 返回有界的工作状态判断；确定性的 host policy 将其映射为 `continue`、`verify`、`retry`、`finish` 或 `escalate`。receipt 记录确定性的 `evidence_state`：`present`、`missing` 或 `contradictory`；矛盾证据不能导致 `finish`。Jev 不执行这些动作。
+- **Shadow compaction：** `jev_shadow_compaction` 为 host 提供的 context 生成批量、保守、只报告的 keep/drop 候选。它不会修改、总结或删除 context；path、error、command 和 requirement 在 provider review 前被保留，provider 失败时保留所有其他 items。
 - **Context filtering：** 可选的确定性 `shadow` 或 `conservative` 过滤器减少过期 context，不使用 LLM 摘要。
 - **Experimental browser fast-path：** `jev_browser_step` 根据 host observation 选择一个有界浏览器动作。observation、审批、原生执行和恢复都由 host 提供。
 - **Fail-open：** Jev 被禁用、不可用、出错或无法确定时，控制权返回 host 的正常路径。Jev 不扩大权限，也不猜测执行。

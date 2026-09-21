@@ -76,7 +76,9 @@ All three modes (`demo`, `openrouter`, and direct `typesafe`), their endpoints, 
 
 - **Routing:** `jev_route` selects one capability from the host-supplied candidate set. Selection is advisory; the host validates the id and permissions.
 - **Receipts/replay:** `jev_record_execution` joins the host result to the original `correlation_id`. JSONL cases live in `.jev/replay/cases.jsonl` and can be evaluated offline with `npm run replay:evaluate`.
-- **Supervision:** `jev_supervise` returns bounded work-state judgments; deterministic host policy maps them to `continue`, `verify`, `retry`, `finish`, or `escalate`. Jev does not perform those actions.
+- **Supervision:** `jev_supervise` returns bounded work-state judgments; deterministic host policy maps them to `continue`, `verify`, `retry`, `finish`, or `escalate`. The receipt records a deterministic `evidence_state`: `present`, `missing`, or `contradictory`. Contradictory evidence cannot result in `finish`. Jev does not perform those actions.
+- **Model routing:** `jev_model_route` returns one recommendation from host-declared model profiles for the next model call. It is shadow-only: the host must measure outcome, retries, latency, and cost before it changes any provider/model setting. Model-route decisions are joined to later `jev_record_execution` receipts by `correlation_id`; record `result.model_route = { actual_model_id, retry_count, outcome }`, then run `npm run model-route:report -- /path/to/cases.jsonl` for a read-only evidence report.
+- **Shadow compaction:** `jev_shadow_compaction` makes batched, conservative, report-only keep/drop candidates for host-supplied context. It never mutates, summarizes, or deletes context; pinned paths, errors, commands, and requirements are retained without provider review, while provider failures retain every remaining item.
 - **Context filtering:** optional deterministic `shadow` or `conservative` filtering reduces stale context without LLM summarization.
 - **Experimental browser fast-path:** `jev_browser_step` chooses one bounded action from a host observation. The host supplies observations, approval, native execution, and recovery. It is opt-in and does not start a browser worker.
 - **Fail-open:** disabled, unavailable, invalid, or inconclusive Jev calls return control to the host's normal path. Jev never widens permissions or guesses execution.
@@ -93,7 +95,7 @@ JEV_CONTEXT_FILTER=shadow jev cli --input examples/route-request.json
 
 Current examples live under `integrations/`:
 
-- `integrations/hermes/`
+- `integrations/hermes/` — see the [local-agent handoff (Russian)](docs/HERMES-LOCAL-AGENT-HANDOFF.ru.md) for the active plugin topology and safe change workflow.
 - `integrations/omp/`
 - `integrations/codex/`
 - `integrations/template/`

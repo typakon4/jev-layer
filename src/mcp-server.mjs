@@ -4,6 +4,8 @@ import { appendExecutionReceipt, appendRoutingCase, buildExecutionReceipt, repla
 import { configuredProvider, configuredReplayPath, loadConfig } from "./config.mjs";
 import { decideBrowserStep } from "./browser.mjs";
 import { superviseWork } from "./supervision.mjs";
+import { buildShadowCompactionReport } from "./shadow-compaction.mjs";
+import { recommendModelRoute } from "./model-routing.mjs";
 import { routeRequest } from "./route.mjs";
 
 const { config } = await loadConfig();
@@ -66,6 +68,38 @@ const tools = [
     },
   },
   {
+    name: "jev_model_route",
+    description: "Recommend one host-declared model profile for the next call. This is shadow-only: it never changes provider, model, reasoning, or execution.",
+    inputSchema: {
+      type: "object",
+      required: ["intent", "models"],
+      properties: {
+        intent: { type: "string" },
+        context: { type: "object" },
+        models: { type: "array", minItems: 1, items: { type: "object" } },
+        harness: { type: "string" },
+        policy: { type: "object" },
+        provider: { type: "string", enum: ["demo", "typesafe", "openrouter"] },
+      },
+    },
+  },
+  {
+    name: "jev_shadow_compaction",
+    description: "Report conservative Jev keep/drop candidates for host-supplied context. This tool never changes, summarizes, or deletes context.",
+    inputSchema: {
+      type: "object",
+      required: ["intent", "context"],
+      properties: {
+        intent: { type: "string" },
+        context: { type: "object" },
+        provider: { type: "string", enum: ["demo", "typesafe", "openrouter"] },
+        batch_size: { type: "integer", minimum: 1, maximum: 8 },
+        keep_threshold: { type: "number", minimum: 0, maximum: 1 },
+        min_confidence: { type: "number", minimum: 0, maximum: 1 },
+      },
+    },
+  },
+  {
     name: "jev_record_execution",
     description: "Attach a host execution result to a Jev decision and persist the unified execution receipt.",
     inputSchema: {
@@ -115,6 +149,8 @@ async function handle(message) {
   if (params.name === "jev_route") return route(args, id);
   if (params.name === "jev_browser_step") return browserStep(args, id);
   if (params.name === "jev_supervise") return supervise(args, id);
+  if (params.name === "jev_model_route") return modelRoute(args, id);
+  if (params.name === "jev_shadow_compaction") return shadowCompaction(args, id);
   if (params.name === "jev_record_execution") return recordExecution(args, id);
   return jsonRpcError(id, -32602, `unknown tool: ${params.name}`);
 }
@@ -158,6 +194,24 @@ async function supervise(args, id) {
     enabled: enabled ?? config.features?.supervision,
     provider: configuredProvider(config, requestedProvider),
     receiptPath: CASES_PATH,
+  });
+  return toolResult(id, result, false);
+}
+
+async function modelRoute(args, id) {
+  const { provider: requestedProvider, ...input } = args;
+  const result = await recommendModelRoute({
+    ...input,
+    provider: configuredProvider(config, requestedProvider),
+  });
+  return toolResult(id, result, false);
+}
+
+async function shadowCompaction(args, id) {
+  const { provider: requestedProvider, ...input } = args;
+  const result = await buildShadowCompactionReport({
+    ...input,
+    provider: configuredProvider(config, requestedProvider),
   });
   return toolResult(id, result, false);
 }

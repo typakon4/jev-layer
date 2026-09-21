@@ -12,6 +12,8 @@ import { configuredProvider, configuredReplayPath, loadConfig } from "./config.m
 import { appendExecutionReceipt, appendRoutingCase, buildExecutionReceipt, replayCasePath } from "./receipts.mjs";
 import { routeRequest } from "./route.mjs";
 import { superviseWork } from "./supervision.mjs";
+import { buildShadowCompactionReport } from "./shadow-compaction.mjs";
+import { recommendModelRoute } from "./model-routing.mjs";
 
 const { config } = await loadConfig();
 const casesPath = replayCasePath(configuredReplayPath(config));
@@ -61,6 +63,30 @@ async function handle({ operation, args = {}, decision = null } = {}) {
       provider,
       receiptPath: casesPath,
     });
+  }
+  if (operation === "model_route") {
+    const { provider: _provider, ...input } = args;
+    const result = await recommendModelRoute({ ...input, provider });
+    await persistRoutingCase({
+      schema_version: 1,
+      harness: input.harness ?? "hermes",
+      intent: input.intent,
+      context: { ...(input.context ?? {}), model_route: { mode: "shadow" } },
+      capabilities: (input.models ?? []).map((profile) => ({
+        id: profile.id,
+        kind: "model",
+        name: profile.model ?? profile.id,
+        description: profile.description ?? "",
+        source: profile.provider ?? null,
+        risk: "low",
+      })),
+      policy: input.policy ?? {},
+    }, result);
+    return result;
+  }
+  if (operation === "shadow_compaction") {
+    const { provider: _provider, ...input } = args;
+    return buildShadowCompactionReport({ ...input, provider });
   }
   if (operation === "record_execution") {
     if (!decision || typeof decision !== "object") throw new TypeError("decision is required for record_execution");

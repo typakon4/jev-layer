@@ -22,6 +22,8 @@ First public-release candidate. This version is prepared but has not been pushed
 - `jev_record_execution` and append-only JSONL routing/execution receipts joined by `correlation_id`.
 - Offline replay/evaluation without host execution calls.
 - Opt-in supervision judgments with deterministic host policy.
+- Opt-in, report-only `jev_model_route` with correlated execution outcomes and a local evidence report.
+- Hermes plugin integration with profile-scoped OpenRouter secret resolution, replay receipts, model-route correlation, and a local-agent handoff guide.
 - Opt-in deterministic context filtering (`shadow` and `conservative`).
 - Explicit capability discovery for skills, MCP, CLI, DSH, tools, subagents, and models.
 - Experimental, opt-in browser fast-path over host-supplied observations.
