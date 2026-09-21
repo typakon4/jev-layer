@@ -1,18 +1,29 @@
-"""Hermes adapter for the standalone Jev layer.
+"""Full Hermes adapter for the standalone Jev decision layer.
 
-This plugin exposes only a decision tool. The selected capability remains
-owned and executed by Hermes through its normal approval/tool path.
+Jev receives only host-supplied bounded choices. Hermes retains tool lookup,
+permissions, approvals, native execution, retries, recovery, and final output.
+The adapter is fail-open: transport or core errors become a Jev fallback and
+never block Hermes's normal path.
 """
+
+from __future__ import annotations
 
 import json
 import os
 import subprocess
+import threading
+from collections import OrderedDict
 from pathlib import Path
+from typing import Any
 
-from .schemas import ROUTE
+from .schemas import BROWSER_STEP, RECORD_EXECUTION, ROUTE, SUPERVISE
 
 ROOT = Path(os.environ.get("JEV_LAYER_ROOT", Path(__file__).resolve().parents[2])).expanduser().resolve()
-CLI = ROOT / "src" / "cli.mjs"
+CORE = ROOT / "src" / "hermes-adapter.mjs"
+_MAX_PENDING_DECISIONS = 64
+_pending_decisions: OrderedDict[str, dict[str, Any]] = OrderedDict()
+_pending_lock = threading.Lock()
+
 
 def _fallback(reason: str) -> str:
     return json.dumps({
@@ -25,27 +36,92 @@ def _fallback(reason: str) -> str:
     })
 
 
-def jev_route(args: dict, **kwargs) -> str:
-    """Return a bounded decision as JSON; never execute the selected target."""
+def _runtime_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env.setdefault("JEV_REPLAY_CASES", str(Path(env.get("HERMES_HOME", "~/.hermes")).expanduser() / "jev-layer" / "replay" / "cases.jsonl"))
+    return env
+
+
+def _call_core(operation: str, args: dict, *, decision: dict | None = None) -> dict:
+    envelope: dict[str, Any] = {"operation": operation, "args": args}
+    if decision is not None:
+        envelope["decision"] = decision
     try:
         completed = subprocess.run(
-            [os.environ.get("JEV_NODE", "node"), str(CLI)],
-            input=json.dumps(args) + "\n",
-            capture_output=True,
-            text=True,
-            timeout=float(os.environ.get("JEV_LAYER_TIMEOUT_S", "10")),
-            check=False,
+            [os.environ.get("JEV_NODE", "node"), str(CORE)],
+            input=json.dumps(envelope) + "\n", capture_output=True, text=True,
+            timeout=float(os.environ.get("JEV_LAYER_TIMEOUT_S", "5")), cwd=ROOT,
+            env=_runtime_env(), check=False,
         )
         if completed.returncode != 0:
-            return _fallback(completed.stderr.strip() or f"core exited with status {completed.returncode}")
+            return json.loads(_fallback(completed.stderr.strip() or f"core exited with status {completed.returncode}"))
         line = next((line for line in completed.stdout.splitlines() if line.strip()), "")
         if not line:
-            return _fallback("core returned no decision")
-        json.loads(line)
-        return line
+            return json.loads(_fallback("core returned no response"))
+        result = json.loads(line)
+        return result if isinstance(result, dict) else json.loads(_fallback("core returned non-object response"))
     except Exception as error:
-        return _fallback(str(error))
+        return json.loads(_fallback(str(error)))
+
+
+def _remember(decision: dict) -> None:
+    correlation_id = decision.get("correlation_id")
+    if not isinstance(correlation_id, str) or not correlation_id:
+        return
+    with _pending_lock:
+        _pending_decisions[correlation_id] = decision
+        _pending_decisions.move_to_end(correlation_id)
+        while len(_pending_decisions) > _MAX_PENDING_DECISIONS:
+            _pending_decisions.popitem(last=False)
+
+
+def _take(correlation_id: str) -> dict | None:
+    with _pending_lock:
+        return _pending_decisions.pop(correlation_id, None)
+
+
+def _route(args: dict, operation: str = "route") -> str:
+    request = dict(args)
+    request.setdefault("schema_version", 1)
+    request.setdefault("harness", "hermes")
+    result = _call_core(operation, request)
+    if result.get("status") in {"selected", "fallback", "no_decision", "needs_confirmation"} and result.get("correlation_id"):
+        _remember(result)
+    result.pop("_jev_request", None)
+    return json.dumps(result)
+
+
+def jev_route(args: dict, **kwargs) -> str:
+    """Choose from a closed Hermes-owned candidate set; never execute it."""
+    return _route(args)
+
+
+def jev_browser_step(args: dict, **kwargs) -> str:
+    """Choose one bounded browser action; Hermes owns observation, approval and execution."""
+    return _route(args, operation="browser_step")
+
+
+def jev_supervise(args: dict, **kwargs) -> str:
+    """Return a bounded work-state judgment; Hermes maps it to its own next action."""
+    request = dict(args)
+    request.setdefault("harness", "hermes")
+    return json.dumps(_call_core("supervise", request))
+
+
+def jev_record_execution(args: dict, **kwargs) -> str:
+    """Append an execution receipt for a decision made in this Hermes process."""
+    correlation_id = args.get("correlation_id")
+    if not isinstance(correlation_id, str) or not correlation_id:
+        return _fallback("correlation_id is required")
+    decision = _take(correlation_id)
+    if decision is None:
+        return _fallback("unknown or expired Jev correlation_id; host execution remains authoritative")
+    receipt = _call_core("record_execution", dict(args), decision=decision)
+    return json.dumps(receipt)
 
 
 def register(ctx):
     ctx.register_tool(name="jev_route", toolset="jev_layer", schema=ROUTE, handler=jev_route)
+    ctx.register_tool(name="jev_record_execution", toolset="jev_layer", schema=RECORD_EXECUTION, handler=jev_record_execution)
+    ctx.register_tool(name="jev_supervise", toolset="jev_layer", schema=SUPERVISE, handler=jev_supervise)
+    ctx.register_tool(name="jev_browser_step", toolset="jev_layer", schema=BROWSER_STEP, handler=jev_browser_step)
