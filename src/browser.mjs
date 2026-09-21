@@ -125,6 +125,7 @@ export async function runBrowserFastPath({
   harness = "browser",
   start_url = null,
   provider = "demo",
+  config,
   enabled,
   maxSteps = 8,
   maxSeconds = 30,
@@ -169,7 +170,7 @@ export async function runBrowserFastPath({
     if (elapsed(started) > maxSeconds * 1_000) return finish("handoff", "browser_fast_path_timeout", observation);
     let routed;
     try {
-      routed = await decideBrowserStep({ goal, observation, harness, start_url, progress }, { enabled: true, provider, policy });
+      routed = await decideBrowserStep({ goal, observation, harness, start_url, progress }, { enabled: true, provider, config, policy });
     } catch (error) {
       metrics.failures += 1;
       return finish("handoff", "browser_decision_failed", observation);

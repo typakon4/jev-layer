@@ -11,6 +11,7 @@ export async function recommendModelRoute({
   harness = "unknown",
   policy = {},
   provider = "demo",
+  config,
 } = {}) {
   if (!Array.isArray(models) || models.length === 0) throw new TypeError("models[] is required");
   const profiles = models.map(normalizeProfile);
@@ -25,7 +26,7 @@ export async function recommendModelRoute({
       // A recommendation must never create an approval boundary by itself.
       confirmation_risk_levels: [],
     },
-  }, { provider });
+  }, { provider, config });
   return {
     ...decision,
     route_mode: "shadow",

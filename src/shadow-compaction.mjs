@@ -1,7 +1,6 @@
 import { sanitizeContext } from "./context-filter.mjs";
 import { isPinnedEvidence } from "./relevance-filter.mjs";
-import { OpenRouterDecisionsProvider, TypeSafeProvider } from "./providers/typesafe.mjs";
-import { DemoProvider } from "./providers/demo.mjs";
+import { resolveProvider } from "./providers/index.mjs";
 
 const LIST_KEYS = new Set(["messages", "events", "logs", "tool_results", "history", "transcript"]);
 const DEFAULT_BATCH_SIZE = 8;
@@ -18,6 +17,7 @@ export async function buildShadowCompactionReport({
   intent = "Assess which context records must remain available to a later agent.",
   context = {},
   provider = "demo",
+  config,
   batchSize = DEFAULT_BATCH_SIZE,
   keepThreshold = DEFAULT_KEEP_THRESHOLD,
   minConfidence = DEFAULT_MIN_CONFIDENCE,
@@ -38,7 +38,7 @@ export async function buildShadowCompactionReport({
   let failed = null;
 
   try {
-    const resolved = resolveProvider(provider);
+    const resolved = resolveProvider(provider, { config });
     if (!resolved || typeof resolved.evaluate !== "function") throw new Error("provider does not support batched evaluation");
     for (const batch of batches(evaluable, normalizedBatchSize)) {
       const raw = await resolved.evaluate({
@@ -142,14 +142,6 @@ function readNoul(answer) {
   if (!validProbability(probability)) return null;
   const confidence = validProbability(answer.confidence) ? answer.confidence : probability;
   return { probability, confidence };
-}
-
-function resolveProvider(provider) {
-  if (provider && typeof provider === "object") return provider;
-  if (provider === "demo") return new DemoProvider();
-  if (provider === "openrouter") return new OpenRouterDecisionsProvider();
-  if (provider === "typesafe") return new TypeSafeProvider();
-  throw new Error(`unsupported provider: ${provider}`);
 }
 
 function batches(items, size) {
