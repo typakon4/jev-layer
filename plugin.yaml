@@ -1,0 +1,8 @@
+name: jev-layer
+version: 0.1.0
+description: Full host-owned Jev routing, receipts, supervision, and browser decisions
+provides_tools:
+  - jev_route
+  - jev_record_execution
+  - jev_supervise
+  - jev_browser_step
