@@ -31,6 +31,32 @@ RECORD_EXECUTION = {
     },
 }
 
+MODEL_ROUTE = {
+    "type": "object",
+    "required": ["intent", "models"],
+    "properties": {
+        "intent": {"type": "string"},
+        "context": {"type": "object"},
+        "models": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+        "harness": {"type": "string"},
+        "policy": {"type": "object"},
+        "provider": {"type": "string", "enum": ["demo", "typesafe", "openrouter"]},
+    },
+}
+
+SHADOW_COMPACTION = {
+    "type": "object",
+    "required": ["intent", "context"],
+    "properties": {
+        "intent": {"type": "string"},
+        "context": {"type": "object"},
+        "provider": {"type": "string", "enum": ["demo", "typesafe", "openrouter"]},
+        "batch_size": {"type": "integer", "minimum": 1, "maximum": 8},
+        "keep_threshold": {"type": "number", "minimum": 0, "maximum": 1},
+        "min_confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    },
+}
+
 SUPERVISE = {
     "type": "object",
     "required": ["job", "observation"],

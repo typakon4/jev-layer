@@ -48,6 +48,7 @@
     "codex:mcp-smoke": "node scripts/codex-mcp-smoke.mjs",
     "replay:evaluate": "node scripts/replay-eval.mjs",
     "receipt:mcp-smoke": "node scripts/mcp-receipt-smoke.mjs",
+    "model-route:report": "node scripts/model-route-report.mjs",
     "browser:e2e": "node scripts/browser-e2e.mjs",
     "browser:benchmark": "node scripts/browser-benchmark.mjs",
     "supervision:e2e": "node scripts/supervision-e2e.mjs",

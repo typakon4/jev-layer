@@ -30,6 +30,8 @@ try {
   await notification("notifications/initialized", {});
   const listed = await request(2, "tools/list", {});
   assert.ok(listed.result.tools.some((tool) => tool.name === "jev_route"));
+  assert.ok(listed.result.tools.some((tool) => tool.name === "jev_model_route"));
+  assert.ok(listed.result.tools.some((tool) => tool.name === "jev_shadow_compaction"));
   assert.ok(listed.result.tools.some((tool) => tool.name === "jev_record_execution"));
 
   const routed = await request(3, "tools/call", {
@@ -69,6 +71,19 @@ try {
   assert.equal(receipt.correlation_id, decision.correlation_id);
   assert.equal(receipt.host.exit_status, 0);
   assert.equal(receipt.host.duration_ms, 3.2);
+
+  const shadow = await request(5, "tools/call", {
+    name: "jev_shadow_compaction",
+    arguments: {
+      provider: "demo",
+      intent: "inspect context before compaction",
+      context: { messages: ["stale note", "Requirement: preserve /workspace/config.json"] },
+    },
+  });
+  const shadowReport = shadow.result.structuredContent;
+  assert.equal(shadowReport.mode, "jev_shadow");
+  assert.equal(shadowReport.changed, false);
+  assert.equal(shadowReport.protected_count, 1);
 
   const records = (await readFile(casesPath, "utf8")).trim().split(/\r?\n/).map(JSON.parse);
   assert.deepEqual(records.map((record) => record.record_type), ["routing_case", "execution_receipt"]);

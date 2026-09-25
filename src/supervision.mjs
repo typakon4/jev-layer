@@ -41,6 +41,7 @@ export function buildSupervisionRequest({
       evidence: bounded(evidence),
       supervision: {
         judgments: bounded(evidence?.judgments ?? {}),
+        evidence_state: deterministicEvidenceState(evidence),
       },
     },
   };
@@ -70,12 +71,42 @@ export function normalizeAssessment(raw) {
   return assessment;
 }
 
+export function deterministicEvidenceState(evidence = {}) {
+  const sources = [];
+  const positive = evidence?.verification_passed === true || evidence?.tests_passed === true;
+  const negative = evidence?.verification_failed === true || evidence?.tests_failed === true;
+  if (evidence?.verification_passed === true) sources.push("verification_passed");
+  if (evidence?.tests_passed === true) sources.push("tests_passed");
+  if (evidence?.verification_failed === true) sources.push("verification_failed");
+  if (evidence?.tests_failed === true) sources.push("tests_failed");
+  if (Array.isArray(evidence?.receipts)) {
+    for (const receipt of evidence.receipts) {
+      if (!receipt || typeof receipt !== "object") continue;
+      const id = typeof receipt.id === "string" && receipt.id ? receipt.id : null;
+      if (receipt.status === "completed") {
+        sources.push(id ? `receipt:${id}` : "receipt:completed");
+      } else if (receipt.status === "failed") {
+        sources.push(id ? `receipt_failed:${id}` : "receipt:failed");
+      }
+    }
+  }
+  const hasPositiveReceipt = sources.some((source) => source === "receipt:completed" || source.startsWith("receipt:"));
+  const hasNegativeReceipt = sources.some((source) => source === "receipt:failed" || source.startsWith("receipt_failed:"));
+  if ((positive || hasPositiveReceipt) && (negative || hasNegativeReceipt)) return { state: "contradictory", sources };
+  if (negative || hasNegativeReceipt) return { state: "contradictory", sources };
+  return { state: positive || hasPositiveReceipt ? "present" : "missing", sources };
+}
+
 export function deterministicSupervisionPolicy({ assessment, evidence = {}, attempts = 0, policy = {} } = {}) {
   const values = assessment && typeof assessment === "object" ? assessment : {};
   const threshold = Number.isFinite(policy.threshold) ? Math.max(0, Math.min(1, policy.threshold)) : 0.7;
   const maxRetries = Number.isInteger(policy.max_retries) && policy.max_retries >= 0 ? policy.max_retries : 2;
-  const verificationEvidence = evidence.verification_passed === true || evidence.tests_passed === true;
+  const evidenceState = deterministicEvidenceState(evidence);
+  const verificationEvidence = evidenceState.state === "present";
 
+  if (evidenceState.state === "contradictory") {
+    return { action: "verify", reason: "verification evidence is contradictory", policy_source: "deterministic_host_policy", evidence_state: evidenceState };
+  }
   if (value(values.worker_stuck) >= threshold) {
     return attempts < maxRetries
       ? { action: "retry", reason: "worker appears stuck and retry budget remains", policy_source: "deterministic_host_policy" }
@@ -150,6 +181,7 @@ export async function superviseWork({
     action: selectedPolicy.action,
     reason: selectedPolicy.reason,
     assessment,
+    evidence_state: deterministicEvidenceState(evidence),
     policy: selectedPolicy,
     request,
     metrics: {

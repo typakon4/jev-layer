@@ -16,7 +16,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-from .schemas import BROWSER_STEP, RECORD_EXECUTION, ROUTE, SUPERVISE
+from .schemas import BROWSER_STEP, MODEL_ROUTE, RECORD_EXECUTION, ROUTE, SHADOW_COMPACTION, SUPERVISE
 
 ROOT = Path(os.environ.get("JEV_LAYER_ROOT", Path(__file__).resolve().parents[2])).expanduser().resolve()
 CORE = ROOT / "src" / "hermes-adapter.mjs"
@@ -38,6 +38,17 @@ def _fallback(reason: str) -> str:
 
 def _runtime_env() -> dict[str, str]:
     env = os.environ.copy()
+    # Resolve only through Hermes's profile-scoped store, then pass it only to
+    # this short-lived local Node adapter. It is never returned or logged.
+    try:
+        from agent.secret_scope import get_secret
+        openrouter_key = get_secret("OPENROUTER_API_KEY")
+        if openrouter_key:
+            env["OPENROUTER_API_KEY"] = openrouter_key
+    except Exception:
+        # The core remains fail-open when the optional provider credential is unavailable.
+        pass
+    # Keep replay evidence in the active Hermes profile, never in the source checkout.
     env.setdefault("JEV_REPLAY_CASES", str(Path(env.get("HERMES_HOME", "~/.hermes")).expanduser() / "jev-layer" / "replay" / "cases.jsonl"))
     return env
 
@@ -101,6 +112,16 @@ def jev_browser_step(args: dict, **kwargs) -> str:
     return _route(args, operation="browser_step")
 
 
+def jev_model_route(args: dict, **kwargs) -> str:
+    """Recommend a declared model profile; this never changes Hermes's model route."""
+    return _route(args, operation="model_route")
+
+
+def jev_shadow_compaction(args: dict, **kwargs) -> str:
+    """Report Jev's conservative keep/drop candidates without mutating host context."""
+    return json.dumps(_call_core("shadow_compaction", dict(args)))
+
+
 def jev_supervise(args: dict, **kwargs) -> str:
     """Return a bounded work-state judgment; Hermes maps it to its own next action."""
     request = dict(args)
@@ -122,6 +143,8 @@ def jev_record_execution(args: dict, **kwargs) -> str:
 
 def register(ctx):
     ctx.register_tool(name="jev_route", toolset="jev_layer", schema=ROUTE, handler=jev_route)
+    ctx.register_tool(name="jev_model_route", toolset="jev_layer", schema=MODEL_ROUTE, handler=jev_model_route)
+    ctx.register_tool(name="jev_shadow_compaction", toolset="jev_layer", schema=SHADOW_COMPACTION, handler=jev_shadow_compaction)
     ctx.register_tool(name="jev_record_execution", toolset="jev_layer", schema=RECORD_EXECUTION, handler=jev_record_execution)
     ctx.register_tool(name="jev_supervise", toolset="jev_layer", schema=SUPERVISE, handler=jev_supervise)
     ctx.register_tool(name="jev_browser_step", toolset="jev_layer", schema=BROWSER_STEP, handler=jev_browser_step)

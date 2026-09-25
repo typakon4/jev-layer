@@ -101,6 +101,7 @@ export function buildSupervisionReceipt({ request, result, recordedAt = new Date
       action: result.action ?? "continue",
       reason: result.reason ?? null,
       assessment: result.assessment ?? null,
+      evidence_state: result.evidence_state ?? request.context?.supervision?.evidence_state ?? null,
       policy: result.policy ?? null,
       jev: {
         provider: result.receipt.provider ?? null,

@@ -12,6 +12,8 @@ import { configuredProvider, configuredReplayPath, loadConfig } from "./config.m
 import { appendExecutionReceipt, appendRoutingCase, buildExecutionReceipt, replayCasePath } from "./receipts.mjs";
 import { routeRequest } from "./route.mjs";
 import { superviseWork } from "./supervision.mjs";
+import { buildShadowCompactionReport } from "./shadow-compaction.mjs";
+import { recommendModelRoute } from "./model-routing.mjs";
 
 const { config } = await loadConfig();
 const casesPath = replayCasePath(configuredReplayPath(config));
@@ -34,6 +36,7 @@ async function handle({ operation, args = {}, decision = null } = {}) {
     const { provider: _provider, engine = "native", ...request } = args;
     const result = await routeRequest(request, {
       provider,
+      config,
       engine,
       contextFilterMode: request.policy?.context_filter_mode ?? config.features?.context_filter,
     });
@@ -43,8 +46,9 @@ async function handle({ operation, args = {}, decision = null } = {}) {
   if (operation === "browser_step") {
     const { provider: _provider, enabled, ...input } = args;
     const routed = await decideBrowserStep(input, {
-      enabled: enabled ?? config.features?.browser_fast_path,
-      provider,
+   enabled: enabled ?? config.features?.browser_fast_path,
+   provider,
+   config,
     });
     routed.decision.browser_action = routed.action
       ? { id: routed.action.id, operation: routed.action.operation, target_id: routed.action.target_id ?? null,
@@ -57,10 +61,35 @@ async function handle({ operation, args = {}, decision = null } = {}) {
     const { provider: _provider, enabled, ...input } = args;
     return superviseWork({
       ...input,
+      config,
       enabled: enabled ?? config.features?.supervision,
       provider,
       receiptPath: casesPath,
     });
+  }
+  if (operation === "model_route") {
+    const { provider: _provider, ...input } = args;
+    const result = await recommendModelRoute({ ...input, provider, config });
+    await persistRoutingCase({
+      schema_version: 1,
+      harness: input.harness ?? "hermes",
+      intent: input.intent,
+      context: { ...(input.context ?? {}), model_route: { mode: "shadow" } },
+      capabilities: (input.models ?? []).map((profile) => ({
+        id: profile.id,
+        kind: "model",
+        name: profile.model ?? profile.id,
+        description: profile.description ?? "",
+        source: profile.provider ?? null,
+        risk: "low",
+      })),
+      policy: input.policy ?? {},
+    }, result);
+    return result;
+  }
+  if (operation === "shadow_compaction") {
+    const { provider: _provider, ...input } = args;
+    return buildShadowCompactionReport({ ...input, provider, config });
   }
   if (operation === "record_execution") {
     if (!decision || typeof decision !== "object") throw new TypeError("decision is required for record_execution");
