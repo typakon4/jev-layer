@@ -5,13 +5,11 @@
 <h1 align="center">jev-layer</h1>
 
 <p align="center">
-  <strong>Portable System-1 decision layer for agent harnesses.</strong><br>
-  Host-owned routing, receipts, replay, and fail-open integrations.
+  <strong>Let an agent make a bounded choice without handing it control.</strong><br>
+  Jev recommends. Your harness still checks permissions and executes.
 </p>
 
-<p align="center">
-  Hermes · OMP · Codex · generic MCP
-</p>
+<p align="center">Hermes · OMP · Codex · generic MCP</p>
 
 <p align="center">
   <a href="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI status" src="https://github.com/typakon4/jev-layer/actions/workflows/ci.yml/badge.svg?branch=main"></a>
@@ -22,66 +20,55 @@
 
 [English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
 
-jev-layer routes bounded choices and records evidence; the host keeps execution, permissions, approvals, retries, recovery, and final results.
+**Install:** `npm install --global jev-layer`  ·  [Integrate a harness](docs/AGENT-IMPLEMENTATION.md) · [Security model](SECURITY.md)
 
-> Integrating jev-layer into a harness? Start with the [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md), not this README alone.
+## What changes
 
-## Architecture
+| Without Jev | With Jev |
+| --- | --- |
+| Your harness follows its existing path to choose a capability. | The harness can ask `jev_route` to choose from a bounded set it supplies. |
+| Your harness owns permissions, approvals, and execution. | Your harness still owns permissions, approvals, and execution. |
+| Execution results stay in the host's normal workflow. | The host can attach the result to the decision with `jev_record_execution` and replay cases offline. |
 
-<p align="center">
-  <img src="docs/architecture.svg" alt="Architecture: agent harnesses send bounded requests to jev-layer; the host owns permissions and execution; receipts support replay." width="960">
-</p>
+Jev never executes a selected capability. If it is disabled, unavailable, invalid, or inconclusive, control returns to the host's normal path.
 
-Jev never executes a selected capability. A provider can be deterministic `demo`, OpenRouter Decisions, or TypeSafe; provider-backed tests are not required for normal CI.
+## Quick start
 
-## Quick Start
-
-Requirements: Node.js 20 or newer. There are no mandatory runtime dependencies.
-
-Install the published CLI:
+Requires Node.js 20 or newer. There are no mandatory runtime dependencies.
 
 ```sh
 npm install --global jev-layer
-```
-
-Or use a local clone:
-
-```sh
-npm install
-npm link
 jev install --project /path/to/workspace
 jev add generic --project /path/to/workspace
 jev doctor --project /path/to/workspace
 ```
 
-`npm link` is local only. It does not publish the package. Use `node /path/to/jev-layer/bin/jev.mjs ...` instead if a global link is not wanted. The default `demo` provider is offline and deterministic.
-
-To call the stdio MCP server directly:
+The default `demo` provider is deterministic and works offline. To run the stdio MCP server directly:
 
 ```sh
 jev mcp
 ```
 
-To use a provider with credentials, keep keys outside the repository:
+## How it fits into a harness
 
-```sh
-export JEV_LAYER_PROVIDER=openrouter
-export OPENROUTER_API_KEY='provided-by-your-secret-store'
-jev doctor --project /path/to/workspace
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Architecture: agent harnesses send bounded requests to jev-layer; the host owns permissions and execution; receipts support replay." width="960">
+</p>
 
-All three modes (`demo`, `openrouter`, and direct `typesafe`), their endpoints, and configuration precedence are documented in the [provider guide](docs/PROVIDERS.md).
+1. The host sends Jev a request and the candidate capabilities it already allows.
+2. Jev returns a bounded recommendation. The host checks it against its own registry and permissions.
+3. The host decides whether to execute, then can record what happened against the original `correlation_id`.
 
-## Core surfaces
+A provider can be deterministic `demo`, OpenRouter Decisions, or TypeSafe. Provider-backed tests are not required for normal CI; see the [provider guide](docs/PROVIDERS.md).
 
-- **Routing:** `jev_route` selects one capability from the host-supplied candidate set. Selection is advisory; the host validates the id and permissions.
-- **Receipts/replay:** `jev_record_execution` joins the host result to the original `correlation_id`. JSONL cases live in `.jev/replay/cases.jsonl` and can be evaluated offline with `npm run replay:evaluate`.
-- **Supervision:** `jev_supervise` returns bounded work-state judgments; deterministic host policy maps them to `continue`, `verify`, `retry`, `finish`, or `escalate`. Jev does not perform those actions.
+## What else it can do
+
+- **Supervision:** `jev_supervise` returns bounded work-state judgments. The host decides whether to continue, verify, retry, finish, or escalate.
 - **Context filtering:** optional deterministic `shadow` or `conservative` filtering reduces stale context without LLM summarization.
-- **Experimental browser fast-path:** `jev_browser_step` chooses one bounded action from a host observation. The host supplies observations, approval, native execution, and recovery. It is opt-in and does not start a browser worker.
-- **Fail-open:** disabled, unavailable, invalid, or inconclusive Jev calls return control to the host's normal path. Jev never widens permissions or guesses execution.
+- **Experimental browser fast-path:** `jev_browser_step` recommends one bounded action from a host observation. The host supplies approval, native execution, and recovery; Jev does not start a browser worker.
+- **Fail open:** optional Jev surfaces are disabled by default. Jev never widens permissions or guesses execution.
 
-All optional surfaces are disabled by default:
+Enable optional surfaces explicitly:
 
 ```sh
 JEV_BROWSER_FAST_PATH=1 jev mcp
@@ -89,43 +76,35 @@ JEV_SUPERVISION=1 jev mcp
 JEV_CONTEXT_FILTER=shadow jev cli --input examples/route-request.json
 ```
 
-## Harness adapters
+For provider credentials, keep keys outside the repository:
 
-Current examples live under `integrations/`:
+```sh
+export JEV_LAYER_PROVIDER=openrouter
+export OPENROUTER_API_KEY='provided-by-your-secret-store'
+jev doctor --project /path/to/workspace
+```
 
-- `integrations/hermes/`
-- `integrations/omp/`
-- `integrations/codex/`
-- `integrations/template/`
+## Pick an integration
+
+Examples and adapters live under `integrations/`:
+
+- Hermes: `integrations/hermes/`
+- OMP: `integrations/omp/`
+- Codex: `integrations/codex/`
+- Another harness: start from `integrations/template/`
+
+Adapters stay thin. The host retains native capability lookup, permissions, approvals, execution, retries, recovery, and final output. For the adapter contract, see [CONTRIBUTING.md](CONTRIBUTING.md). For compatibility rules, see [docs/SCHEMA-VERSIONING.md](docs/SCHEMA-VERSIONING.md).
 
 The release baseline records OMP `18.2.6`, Hermes `0.21.3` (`b675e6de`), and Codex CLI `0.155.1` observed in the preparation environment. This is a version/contract baseline, not a claim of full provider/model coverage; see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md).
 
-Adapters are intentionally thin. They may call the CLI or stdio MCP, but the host must retain native capability lookup, permissions, approvals, execution, retries, recovery, and final output.
+## Boundaries
 
-### Adding a new harness
-
-The shortest PR path is:
-
-1. copy `integrations/template/adapter.mjs`;
-2. add `integrations/<harness>/` and a secret-free config/example;
-3. call `jev_route`, preserve `correlation_id`, execute only through the host registry, then call `jev_record_execution`;
-4. add an offline smoke fixture for success, fail-open, approval denial, and execution receipt;
-5. document supported versions and run CI.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the adapter contract and [docs/SCHEMA-VERSIONING.md](docs/SCHEMA-VERSIONING.md) for compatibility rules.
-
-## Browser status
-
-Browser fast-path **reliability is validated against the current real-browser fixtures**, including action sequencing, visible-link navigation, native select execution, approval denial, and recovery. **Performance optimization remains experimental**. No browser speedup claim is made.
-
-## Security and compatibility
-
-- MIT licensed; see [LICENSE](LICENSE).
-- jev-layer is not a security boundary. Host permissions and approvals are authoritative; see [SECURITY.md](SECURITY.md).
+- jev-layer is not a security boundary. Host permissions and approvals remain authoritative; see [SECURITY.md](SECURITY.md).
 - Schema, MCP tool, receipt, replay, and adapter contracts are currently version 1. Prefer additive changes; do not break v1 silently.
+- Browser fast-path reliability is validated against current real-browser fixtures. Performance optimization remains experimental; no browser speedup claim is made.
 - Do not commit credentials, logs containing secrets, `.env` files, or machine-specific paths.
 
-## Verification
+## Verify locally
 
 ```sh
 npm test
@@ -135,12 +114,8 @@ npm run clean-install-smoke
 npm pack --dry-run
 ```
 
-The GitHub Actions matrix runs these checks on Node.js 20, 22, and 24. Provider-backed tests require an explicitly configured secret-managed environment and are not part of ordinary PR CI.
+GitHub Actions runs these checks on Node.js 20, 22, and 24. Provider-backed tests require a secret-managed environment and are not part of ordinary PR CI.
 
-## Release documents
+## Project docs
 
-- [CONTRIBUTING.md](CONTRIBUTING.md)
-- [SECURITY.md](SECURITY.md)
-- [RELEASE.md](RELEASE.md)
-- [CHANGELOG.md](CHANGELOG.md)
-- [Agent implementation guide](docs/AGENT-IMPLEMENTATION.md)
+[Agent implementation guide](docs/AGENT-IMPLEMENTATION.md) · [Providers](docs/PROVIDERS.md) · [Compatibility](docs/COMPATIBILITY.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Release](RELEASE.md) · [Changelog](CHANGELOG.md)
