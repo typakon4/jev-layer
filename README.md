@@ -64,6 +64,8 @@ A provider can be deterministic `demo`, OpenRouter Decisions, or TypeSafe. Provi
 ## What else it can do
 
 - **Supervision:** `jev_supervise` returns bounded work-state judgments. The host decides whether to continue, verify, retry, finish, or escalate.
+- **Model routing:** `jev_model_route` recommends one host-declared model profile for a future call. It is advisory only; the host measures outcomes before changing provider or model settings. Correlated receipts can be reviewed with `npm run model-route:report -- /path/to/cases.jsonl`.
+- **Shadow compaction:** `jev_shadow_compaction` produces report-only keep/drop candidates for host-supplied context. It does not summarize, mutate, or delete context, and keeps pinned evidence on provider failure.
 - **Context filtering:** optional deterministic `shadow` or `conservative` filtering reduces stale context without LLM summarization.
 - **Experimental browser fast-path:** `jev_browser_step` recommends one bounded action from a host observation. The host supplies approval, native execution, and recovery; Jev does not start a browser worker.
 - **Fail open:** optional Jev surfaces are disabled by default. Jev never widens permissions or guesses execution.
@@ -88,7 +90,7 @@ jev doctor --project /path/to/workspace
 
 Examples and adapters live under `integrations/`:
 
-- Hermes: `integrations/hermes/`
+- Hermes: `integrations/hermes/` (see the [local-agent handoff guide](docs/HERMES-LOCAL-AGENT-HANDOFF.ru.md))
 - OMP: `integrations/omp/`
 - Codex: `integrations/codex/`
 - Another harness: start from `integrations/template/`
