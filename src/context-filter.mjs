@@ -1,6 +1,6 @@
 import { byteLength, stableJson } from "./contract.mjs";
 import { filterContext, normalizeRelevanceMode } from "./relevance-filter.mjs";
-const SECRET_KEY = /(token|secret|password|passwd|api[_-]?key|authorization|cookie|credential|private[_-]?key|session)/i;
+const SECRET_KEY = /(token|secret|password|passwd|api[_-]?key|authorization|cookie|credential|private[_-]?key|session|data_base64)/i;
 const MAX_STRING = 2_000;
 const MAX_DEPTH = 4;
 

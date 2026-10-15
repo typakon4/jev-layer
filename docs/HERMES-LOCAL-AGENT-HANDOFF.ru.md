@@ -6,11 +6,12 @@
 
 - Исходный репозиторий: `/home/hermes/jev-layer`.
 - Активная plugin-копия Hermes: `~/.hermes/plugins/jev-layer`.
-- Plugin регистрирует ровно шесть tools:
+- Набор tools текущего исходника (новый `jev_computer_step` появится в gateway только после синхронизации plugin-копии и restart):
   - `jev_route`;
   - `jev_record_execution`;
   - `jev_supervise`;
   - `jev_browser_step`;
+  - `jev_computer_step`;
   - `jev_shadow_compaction`;
   - `jev_model_route`.
 - Replay evidence активного профиля: `~/.hermes/jev-layer/replay/cases.jsonl`.
@@ -103,7 +104,7 @@ npm run model-route:report -- ~/.hermes/jev-layer/replay/cases.jsonl
 
 ### `jev_browser_step`
 
-Принимает только snapshot, который сделал host: `url`, visible text, targets, tabs, scroll и progress. Возвращает один bounded action: scroll, switch tab, visible link navigation, click, native select или handoff.
+Принимает только snapshot, который сделал host: `url`, visible text, targets, tabs, scroll, progress и опциональный `screenshot: {format, data_base64, width, height}`. Возвращает один bounded action: scroll, switch tab, visible link navigation, click, native select или handoff.
 
 - `scroll` и `switch_tab` могут быть исполнены только через native Hermes browser executor.
 - `click`, `select`, `navigate` требуют host approval.
@@ -112,6 +113,15 @@ npm run model-route:report -- ~/.hermes/jev-layer/replay/cases.jsonl
 - После каждого host шага можно записать routing case и execution receipt; это позволяет replay без повторного browser execution.
 
 `browser-use/jev-ultrafast` был использован как архитектурный reference (динамическая индексированная action space), но его cloud/browser worker **не установлен и не запущен**. Не подменяй Hermes browser security model его executor'ом.
+
+### `jev_computer_step`
+
+Новая opt-in поверхность для desktop: host передаёт скриншот и закрытый `actions` из click/type/key/scroll/handoff. Нужны явные `actor_permissions: ["computer"]` и Jev 1.14 через `openrouter` или `typesafe`. Включение: `JEV_COMPUTER_USE=1`, `features.computer_use: true` или `enabled: true`; явное `enabled: false` отключает вызов.
+
+Клик по описанной цели проходит отдельные Noul + Box проверки. Координаты привязаны к SHA-256 и пикселям исходного скриншота; freshness, focus, DPI/crop mapping и исполнение проверяет host. Click/type/key требуют host confirmation даже при low risk. OpenRouter принимает изображения как inline `image_url` parts, а не TypeSafe `assets`; адаптер делает преобразование автоматически. Live проверки подтвердили различение красного/синего и grounding прямоугольника по скриншоту.
+
+Полный [контракт и пример](AGENT-IMPLEMENTATION.md#vision-and-computer-use). Скриншоты не сохраняются в replay; visual replay без исходных assets возвращает fallback. Никакой desktop executor, OCR service или browser worker этой поверхностью не устанавливается.
+
 
 ### `jev_shadow_compaction`
 

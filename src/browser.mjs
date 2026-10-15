@@ -41,6 +41,9 @@ export function buildBrowserRequest({ goal, observation = {}, harness = "browser
     actor_permissions,
     capabilities: actions.map(toCapability),
     policy,
+    ...(observation?.screenshot ? { assets: { "jev-browser-screenshot": {
+      type: "image", format: observation.screenshot.format, data_base64: observation.screenshot.data_base64,
+    } } } : {}),
   };
 }
 export function browserActions({ goal, observation, start_url = null, progress = null }) {
@@ -159,7 +162,8 @@ export async function runBrowserFastPath({
 
   let observation;
   try {
-    observation = normalizeObservation(await executor.observe());
+    const captured = await executor.observe();
+    observation = { ...normalizeObservation(captured), ...(captured?.screenshot ? { screenshot: captured.screenshot } : {}) };
   } catch (error) {
     metrics.failures += 1;
     return finish("handoff", "browser_observation_failed", { error: message(error) });
@@ -249,7 +253,8 @@ export async function runBrowserFastPath({
       const result = await execute(routed.action);
       metrics.browser_actions += 1;
       stepTrace.executed = true;
-      const nextObservation = normalizeObservation(result?.observation ?? await executor.observe());
+      const captured = result?.observation ?? await executor.observe();
+      const nextObservation = { ...normalizeObservation(captured), ...(captured?.screenshot ? { screenshot: captured.screenshot } : {}) };
       progress = advanceProgress(progress, routed.action, observation, nextObservation, {
         status: "completed",
         result: result?.result ?? result ?? null,
@@ -309,6 +314,12 @@ function normalizeObservation(observation) {
     title: typeof observation.title === "string" ? observation.title.slice(0, 500) : null,
     visible_text: typeof observation.visible_text === "string" ? observation.visible_text.slice(0, 8_000) : "",
     targets: Array.isArray(observation.targets) ? observation.targets.slice(0, MAX_TARGETS).map(normalizeTarget).filter(Boolean) : [],
+    ...(observation.screenshot ? { screenshot: {
+      format: observation.screenshot.format,
+      width: observation.screenshot.width,
+      height: observation.screenshot.height,
+      sha256: observation.screenshot.sha256 ?? (typeof observation.screenshot.data_base64 === "string" ? sha256(observation.screenshot.data_base64) : null),
+    } } : {}),
     tabs: Array.isArray(observation.tabs) ? observation.tabs.slice(0, MAX_TABS).map(normalizeTab).filter(Boolean) : [],
     scroll: {
       up: scroll.up === true,
@@ -344,7 +355,7 @@ function normalizeProgress(progress, goal, observation) {
   const source = progress && typeof progress === "object" ? progress : {};
   return {
     goal: goal.slice(0, MAX_LABEL),
-    current_observation: observation,
+    current_observation: normalizeObservation(observation),
     executed_actions: Array.isArray(source.executed_actions) ? source.executed_actions.slice(-16).map(compactActionRecord) : [],
     used_targets: Array.isArray(source.used_targets) ? [...new Set(source.used_targets.filter((value) => typeof value === "string").slice(-32))] : [],
     blocked_actions: Array.isArray(source.blocked_actions) ? [...new Set(source.blocked_actions.filter((value) => typeof value === "string").slice(-32))] : [],
@@ -508,6 +519,7 @@ function browserStateFingerprint(observation) {
     targets: observation.targets,
     tabs: observation.tabs,
     scroll: observation.scroll,
+    screenshot: normalizeObservation(observation).screenshot ?? null,
   });
 }
 

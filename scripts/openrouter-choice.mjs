@@ -1,7 +1,7 @@
 import { routeRequest } from "../src/route.mjs";
 
 const endpoint = process.env.OPENROUTER_DECISIONS_ENDPOINT ?? "https://openrouter.ai/api/alpha/decisions";
-const model = process.env.OPENROUTER_DECISIONS_MODEL ?? "typesafe/jev-1.13";
+const model = process.env.OPENROUTER_DECISIONS_MODEL ?? "typesafe/jev-1.14";
 const decision = await routeRequest({
   schema_version: 1,
   harness: "jev-layer-openrouter-smoke",

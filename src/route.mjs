@@ -3,11 +3,12 @@ import { projectState } from "./context-filter.mjs";
 import { discoverCapabilities } from "./discovery.mjs";
 import { decisionCandidates, DEFAULT_POLICY, deterministicCandidate, filterCapabilities, normalizeCapabilities } from "./registry.mjs";
 import { resolveProvider } from "./providers/index.mjs";
+import { normalizeImageAssets } from "./images.mjs";
 
 export async function routeRequest(input, options = {}) {
   const discovered = options.discovery ? discoverCapabilities(options.discovery) : [];
   const request = normalizeRequest(discovered.length ? { ...input, capabilities: [...(Array.isArray(input?.capabilities) ? input.capabilities : []), ...discovered] } : input);
-  if (options.engine === "jevrouter") return routeViaJevRouter(request, options);
+  if (options.engine === "jevrouter" && !input.assets && !input.assets_omitted) return routeViaJevRouter(request, options);
 
   const started = performance.now();
   const effectivePolicy = { ...DEFAULT_POLICY, ...request.policy, ...(options.policy ?? {}) };
@@ -28,6 +29,14 @@ export async function routeRequest(input, options = {}) {
   try {
     provider = resolveProvider(options.provider ?? "demo", options);
     base.provider = provider.name;
+    if (request.assets_omitted) throw new Error("visual replay requires the original images; stored screenshots are intentionally omitted");
+    const assets = normalizeImageAssets(request.assets);
+    if (Object.keys(assets).length) {
+      if (options.engine === "jevrouter" || provider.supportsImages !== true) throw new Error("provider does not support image decisions");
+      projection.state.visual_assets = Object.keys(assets);
+      projection.context_bytes = byteLength(projection.state);
+    }
+    request.assets = assets;
   } catch (error) {
     return fallback(base, assessments, "provider_error", error instanceof Error ? error.message : String(error), projection.state);
   }
@@ -66,7 +75,7 @@ export async function routeRequest(input, options = {}) {
 
   let raw;
   try {
-    raw = await provider.decide({ state: projection.state, candidates: eligible });
+    raw = await provider.decide({ state: projection.state, candidates: eligible, assets: request.assets });
   } catch (error) {
     return fallback(base, assessments, "provider_error", error instanceof Error ? error.message : String(error), projection.state);
   }

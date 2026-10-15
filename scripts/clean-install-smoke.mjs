@@ -8,30 +8,40 @@ import { tmpdir } from "node:os";
 
 const execFileAsync = promisify(execFile);
 const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const npmCli = process.env.npm_execpath;
+assert.ok(npmCli, "Run this smoke with npm run clean-install-smoke so npm_execpath identifies the npm CLI.");
 const stage = await mkdtemp(join(tmpdir(), "jev-clean-install-"));
 const packageRoot = join(stage, "package");
 const workspace = join(stage, "workspace");
+const installedRoot = join(workspace, "node_modules", "jev-layer");
 
 try {
   await copyDistribution(packageRoot);
-  await execFileAsync("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund"], { cwd: packageRoot, env: process.env });
+  await runNpm(packageRoot, ["install", "--ignore-scripts", "--no-audit", "--no-fund"]);
   await mkdir(workspace, { recursive: true });
   await writeFile(join(workspace, "package.json"), JSON.stringify({ name: "clean-install-workspace", private: true }, null, 2) + "\n", "utf8");
-  await execFileAsync("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--no-save", packageRoot], { cwd: workspace, env: process.env });
-  await runNode(packageRoot, ["bin/jev.mjs", "install", "--project", workspace]);
-  await runNode(packageRoot, ["bin/jev.mjs", "add", "generic", "--project", workspace]);
-  const doctor = await runNode(packageRoot, ["bin/jev.mjs", "doctor", "--project", workspace]);
+  await runNpm(workspace, ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--no-save", "--install-links", packageRoot]);
+  await runJev(workspace, ["install", "--project", workspace]);
+  await runJev(workspace, ["add", "generic", "--project", workspace]);
+  const doctor = await runJev(workspace, ["doctor", "--project", workspace]);
   const doctorReport = JSON.parse(doctor.stdout);
   assert.equal(doctorReport.ok, true);
+  assert.equal(doctorReport.package_root, installedRoot);
 
-  const cli = await runJev(workspace, ["cli", "--provider", "demo", "--input", join(packageRoot, "examples", "route-request.json")]);
+  const cli = await runJev(workspace, ["cli", "--provider", "demo", "--input", join(installedRoot, "examples", "route-request.json")]);
   const cliDecision = JSON.parse(cli.stdout.trim().split(/\r?\n/).at(-1));
   assert.equal(cliDecision.execution.enabled, false);
   assert.ok(cliDecision.correlation_id);
 
   const genericConfig = JSON.parse(await readFile(join(workspace, ".jev", "adapters", "generic.json"), "utf8"));
   const genericServer = genericConfig.mcpServers.jev;
-  assert.deepEqual(genericServer.args, ["mcp"]);
+  if (process.platform === "win32") {
+    assert.equal(genericServer.command, process.execPath);
+    assert.deepEqual(genericServer.args, [join(installedRoot, "bin", "jev.mjs"), "mcp"]);
+  } else {
+    assert.equal(genericServer.command, "jev");
+    assert.deepEqual(genericServer.args, ["mcp"]);
+  }
   const mcpEnv = localEnv(workspace);
   const mcp = spawn(genericServer.command, genericServer.args, {
     cwd: workspace,
@@ -88,7 +98,7 @@ try {
   });
   const decision = routed.result.structuredContent;
   assert.equal(decision.status, "selected");
-  const hostResult = await readFile(join(packageRoot, "package.json"), "utf8");
+  const hostResult = await readFile(join(installedRoot, "package.json"), "utf8");
   const recorded = await request("tools/call", {
     name: "jev_record_execution",
     arguments: {
@@ -114,7 +124,7 @@ try {
   assert.equal(records.length, 2);
   assert.deepEqual(records.map((record) => record.record_type), ["routing_case", "execution_receipt"]);
   assert.equal(records[0].correlation_id, records[1].correlation_id);
-  const replay = await runNode(packageRoot, ["scripts/replay-eval.mjs", "--provider", "demo", "--input", join(workspace, ".jev", "replay", "cases.jsonl"), "--limit", "1"]);
+  const replay = await runNode(installedRoot, ["scripts/replay-eval.mjs", "--provider", "demo", "--input", join(workspace, ".jev", "replay", "cases.jsonl"), "--limit", "1"]);
   const replayReport = JSON.parse(replay.stdout);
   assert.equal(replayReport.replayed_cases, 1);
   assert.equal(replayReport.host_execution_calls, 0);
@@ -143,8 +153,12 @@ function runNode(cwd, args) {
   return execFileAsync(process.execPath, args, { cwd, env: process.env, maxBuffer: 2 * 1024 * 1024 });
 }
 
+function runNpm(cwd, args) {
+  return runNode(cwd, [npmCli, ...args]);
+}
+
 function runJev(cwd, args) {
-  return execFileAsync("jev", args, { cwd, env: localEnv(cwd), maxBuffer: 2 * 1024 * 1024 });
+  return execFileAsync(process.execPath, [join(installedRoot, "bin", "jev.mjs"), ...args], { cwd, env: localEnv(cwd), maxBuffer: 2 * 1024 * 1024 });
 }
 
 function localEnv(workspaceRoot) {

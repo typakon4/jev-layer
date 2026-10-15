@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 import { createInterface } from "node:readline";
+import { readFile } from "node:fs/promises";
 import { appendExecutionReceipt, appendRoutingCase, buildExecutionReceipt, replayCasePath } from "./receipts.mjs";
 import { configuredProvider, configuredReplayPath, loadConfig } from "./config.mjs";
 import { decideBrowserStep } from "./browser.mjs";
+import { decideComputerStep } from "./computer.mjs";
 import { superviseWork } from "./supervision.mjs";
 import { buildShadowCompactionReport } from "./shadow-compaction.mjs";
 import { recommendModelRoute } from "./model-routing.mjs";
 import { routeRequest } from "./route.mjs";
 
 const { config } = await loadConfig();
-const serverInfo = { name: "jev-layer", version: "0.1.0" };
+const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+const serverInfo = { name: "jev-layer", version };
 const CASES_PATH = replayCasePath(configuredReplayPath(config));
 const pendingDecisions = new Map();
 const tools = [
@@ -23,6 +26,7 @@ const tools = [
         intent: { type: "string" },
         harness: { type: "string" },
         context: { type: "object" },
+        assets: { type: "object", description: "Inline PNG/JPEG assets keyed by reference; images are passed outside the text projection." },
         actor_permissions: { type: "array", items: { type: "string" } },
         capabilities: { type: "array", items: { type: "object" } },
         policy: { type: "object" },
@@ -41,7 +45,41 @@ const tools = [
         goal: { type: "string" },
         harness: { type: "string" },
         start_url: { type: ["string", "null"] },
-        observation: { type: "object" },
+        observation: { type: "object", description: "Host snapshot: url, visible_text, targets, tabs, scroll, and optional screenshot {format,data_base64,width,height}." },
+        progress: { type: "object" },
+        actor_permissions: { type: "array", items: { type: "string" } },
+        policy: { type: "object" },
+        provider: { type: "string", enum: ["demo", "typesafe", "openrouter"] },
+        enabled: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "jev_computer_step",
+    description: "Recommend one host-declared desktop action, optionally grounding a click in a screenshot. Advisory only: host validates freshness, permissions, approval and execution.",
+    inputSchema: {
+      type: "object",
+      required: ["goal", "observation", "actions", "actor_permissions"],
+      properties: {
+        goal: { type: "string" },
+        harness: { type: "string" },
+        observation: { type: "object", description: "Host screenshot {format,data_base64,width,height}, optional application and visible_text." },
+        actions: { type: "array", maxItems: 32, items: {
+          type: "object", required: ["id", "operation"],
+          properties: {
+            id: { type: "string" },
+            operation: { type: "string", enum: ["click", "type", "key", "scroll", "handoff"] },
+            args: { type: "object", description: "Exact host-declared arguments; Jev does not generate typing or key input." },
+            target: { type: "string", description: "Unique visible click target to locate when no x/y are supplied." },
+            description: { type: "string" },
+            risk: { type: "string", enum: ["low", "medium", "high", "critical"] },
+            available: { type: "boolean" },
+            availability: { type: "object" },
+            permissions: { type: "array", items: { type: "string" } },
+            policy: { type: "object" },
+          },
+        } },
+        actor_permissions: { type: "array", items: { type: "string" }, description: "Must explicitly include computer; never grants host permission." },
         policy: { type: "object" },
         provider: { type: "string", enum: ["demo", "typesafe", "openrouter"] },
         enabled: { type: "boolean" },
@@ -148,6 +186,7 @@ async function handle(message) {
   const args = params.arguments && typeof params.arguments === "object" ? params.arguments : {};
   if (params.name === "jev_route") return route(args, id);
   if (params.name === "jev_browser_step") return browserStep(args, id);
+  if (params.name === "jev_computer_step") return computerStep(args, id);
   if (params.name === "jev_supervise") return supervise(args, id);
   if (params.name === "jev_model_route") return modelRoute(args, id);
   if (params.name === "jev_shadow_compaction") return shadowCompaction(args, id);
@@ -175,15 +214,20 @@ async function browserStep(args, id) {
     provider: configuredProvider(config, requestedProvider),
   });
   routed.decision.browser_action = routed.action
-    ? {
-        id: routed.action.id,
-        operation: routed.action.operation,
-        target_id: routed.action.target_id ?? null,
-        option_id: routed.action.option_id ?? null,
-        consequential: routed.action.consequential,
-      }
+    ? { ...routed.action, target_id: routed.action.target_id ?? null, option_id: routed.action.option_id ?? null }
     : null;
   return persistDecision(routed.request, routed.decision, id);
+}
+
+async function computerStep(args, id) {
+  const { provider: requestedProvider, enabled, ...input } = args;
+  const routed = await decideComputerStep(input, {
+    config,
+    enabled: enabled ?? (process.env.JEV_COMPUTER_USE === "1" || config.features?.computer_use),
+    provider: configuredProvider(config, requestedProvider),
+  });
+  routed.decision.computer_action = routed.action;
+  return persistDecision(routed.request ?? { harness: input.harness ?? "computer", intent: input.goal }, routed.decision, id);
 }
 
 async function supervise(args, id) {
@@ -217,7 +261,9 @@ async function shadowCompaction(args, id) {
 }
 
 async function persistDecision(request, decision, id) {
-  pendingDecisions.set(decision.correlation_id, { request, decision });
+  const { assets, ...retainedRequest } = request;
+  if (Object.keys(assets ?? {}).length) retainedRequest.assets_omitted = true;
+  pendingDecisions.set(decision.correlation_id, { request: retainedRequest, decision });
   try {
     await appendRoutingCase({ path: CASES_PATH, request, decision });
     decision.receipt = { ...decision.receipt, replay_case_id: decision.correlation_id, replay_persisted: true };

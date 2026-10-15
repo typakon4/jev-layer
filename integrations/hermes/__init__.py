@@ -16,7 +16,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any
 
-from .schemas import BROWSER_STEP, MODEL_ROUTE, RECORD_EXECUTION, ROUTE, SHADOW_COMPACTION, SUPERVISE
+from .schemas import BROWSER_STEP, COMPUTER_STEP, MODEL_ROUTE, RECORD_EXECUTION, ROUTE, SHADOW_COMPACTION, SUPERVISE
 
 ROOT = Path(os.environ.get("JEV_LAYER_ROOT", Path(__file__).resolve().parents[2])).expanduser().resolve()
 CORE = ROOT / "src" / "hermes-adapter.mjs"
@@ -61,7 +61,7 @@ def _call_core(operation: str, args: dict, *, decision: dict | None = None) -> d
         completed = subprocess.run(
             [os.environ.get("JEV_NODE", "node"), str(CORE)],
             input=json.dumps(envelope) + "\n", capture_output=True, text=True,
-            timeout=float(os.environ.get("JEV_LAYER_TIMEOUT_S", "5")), cwd=ROOT,
+            timeout=float(os.environ.get("JEV_LAYER_TIMEOUT_S", "10")), cwd=ROOT,
             env=_runtime_env(), check=False,
         )
         if completed.returncode != 0:
@@ -112,6 +112,11 @@ def jev_browser_step(args: dict, **kwargs) -> str:
     return _route(args, operation="browser_step")
 
 
+def jev_computer_step(args: dict, **kwargs) -> str:
+    """Recommend a closed-set desktop action; host owns screenshot freshness and execution."""
+    return _route(args, operation="computer_step")
+
+
 def jev_model_route(args: dict, **kwargs) -> str:
     """Recommend a declared model profile; this never changes Hermes's model route."""
     return _route(args, operation="model_route")
@@ -148,3 +153,4 @@ def register(ctx):
     ctx.register_tool(name="jev_record_execution", toolset="jev_layer", schema=RECORD_EXECUTION, handler=jev_record_execution)
     ctx.register_tool(name="jev_supervise", toolset="jev_layer", schema=SUPERVISE, handler=jev_supervise)
     ctx.register_tool(name="jev_browser_step", toolset="jev_layer", schema=BROWSER_STEP, handler=jev_browser_step)
+    ctx.register_tool(name="jev_computer_step", toolset="jev_layer", schema=COMPUTER_STEP, handler=jev_computer_step)

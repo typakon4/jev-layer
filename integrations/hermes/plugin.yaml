@@ -1,6 +1,6 @@
 name: jev-layer
-version: 0.1.0
-description: Full host-owned Jev routing, receipts, supervision, shadow compaction, model routing, and browser decisions
+version: 0.3.0
+description: Host-owned Jev routing, receipts, supervision, context, model, browser and computer-use decisions
 provides_tools:
   - jev_route
   - jev_model_route
@@ -8,3 +8,4 @@ provides_tools:
   - jev_record_execution
   - jev_supervise
   - jev_browser_step
+  - jev_computer_step

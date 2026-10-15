@@ -6,6 +6,7 @@ import { test } from "node:test";
 import { buildBrowserRequest, browserActions, decideBrowserStep, runBrowserFastPath } from "../src/browser.mjs";
 import { readRoutingCases } from "../src/receipts.mjs";
 import { routeRequest } from "../src/route.mjs";
+import { buildExecutionReceipt, buildRoutingCase } from "../src/receipts.mjs";
 function providerFor(choices) {
   let call = 0;
   return {
@@ -196,4 +197,26 @@ test("native select uses the optional host select executor", async () => {
   assert.equal(result.metrics.browser_actions, 1);
   assert.equal(selectCalls, 1);
   assert.equal(executeCalls, 0);
+});
+
+test("screenshots stay out of browser text context and durable replay", async () => {
+  const imageData = "private-screen-pixels";
+  const request = buildBrowserRequest({
+    goal: "inspect the screen",
+    observation: {
+      screenshot: { format: "png", data_base64: imageData, width: 280, height: 280 },
+      targets: [{ id: "inspect", role: "button", name: "Inspect" }],
+    },
+  });
+  assert.equal(JSON.stringify(request.context).includes(imageData), false);
+  const decision = await routeRequest(request, { provider: "demo" });
+  assert.equal(decision.status, "fallback");
+  const recorded = buildRoutingCase({ request, decision });
+  assert.equal(JSON.stringify(recorded).includes(imageData), false);
+  assert.equal(recorded.request.assets_omitted, true);
+  assert.equal(typeof recorded.request.context.browser.observation.screenshot.sha256, "string");
+  const execution = buildExecutionReceipt({ request, decision, host: {
+    status: "completed", result: { observation: { screenshot: { format: "png", data_base64: imageData } } },
+  } });
+  assert.equal(JSON.stringify(execution).includes(imageData), false);
 });

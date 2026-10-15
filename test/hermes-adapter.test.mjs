@@ -3,9 +3,10 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const adapter = new URL("../src/hermes-adapter.mjs", import.meta.url).pathname;
+const adapter = fileURLToPath(new URL("../src/hermes-adapter.mjs", import.meta.url));
 
 function run(lines, replayPath) {
   return new Promise((resolve, reject) => {

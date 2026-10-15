@@ -56,11 +56,13 @@ async function add(argv) {
   const project = projectPath(options);
   const { config } = await loadConfig({ cwd: project });
   const provider = configuredProvider(config, options.provider);
-  const commandName = options.command ?? process.env.JEV_COMMAND ?? "jev";
+  const customCommand = options.command ?? process.env.JEV_COMMAND;
+  const nativeNode = process.platform === "win32" && !customCommand;
+  const commandName = customCommand ?? (nativeNode ? process.execPath : "jev");
   const server = {
     type: "stdio",
     command: commandName,
-    args: ["mcp"],
+    args: nativeNode ? [join(PACKAGE_ROOT, "bin", "jev.mjs"), "mcp"] : ["mcp"],
     cwd: ".",
     env: { JEV_LAYER_PROVIDER: provider },
   };
@@ -168,11 +170,11 @@ async function writeSnippet(project, name, content, extension = ".yaml") {
 }
 
 function codexSnippet(server) {
-  return `[mcp_servers.jev]\ncommand = ${JSON.stringify(server.command)}\nargs = ["mcp"]\ncwd = "."\n\n[mcp_servers.jev.env]\nJEV_LAYER_PROVIDER = ${JSON.stringify(server.env.JEV_LAYER_PROVIDER)}\n`;
+  return `[mcp_servers.jev]\ncommand = ${JSON.stringify(server.command)}\nargs = ${JSON.stringify(server.args)}\ncwd = "."\n\n[mcp_servers.jev.env]\nJEV_LAYER_PROVIDER = ${JSON.stringify(server.env.JEV_LAYER_PROVIDER)}\n`;
 }
 
 function hermesSnippet(server) {
-  return `mcp_servers:\n  jev:\n    command: ${server.command}\n    args:\n      - mcp\n    env:\n      JEV_LAYER_PROVIDER: ${server.env.JEV_LAYER_PROVIDER}\n      # Export OPENROUTER_API_KEY or TYPESAFE_API_KEY in the Hermes process environment.\n`;
+  return `mcp_servers:\n  jev:\n    command: ${JSON.stringify(server.command)}\n    args:\n${server.args.map((arg) => `      - ${JSON.stringify(arg)}\n`).join("")}    env:\n      JEV_LAYER_PROVIDER: ${server.env.JEV_LAYER_PROVIDER}\n      # Export OPENROUTER_API_KEY or TYPESAFE_API_KEY in the Hermes process environment.\n`;
 }
 
 async function writeJson(path, value) {
@@ -210,5 +212,5 @@ function parseOptions(argv) {
 }
 
 function printHelp() {
-  console.log(`jev-layer portable setup\n\nCommands:\n  jev install [--project DIR]       initialize local state\n  jev init [--project DIR]          write .jev/config.json and env example\n  jev add <harness> [options]       add omp, hermes, codex, or generic MCP adapter\n  jev doctor [--project DIR]        check runtime, config, provider and secrets\n  jev mcp                           run the stdio MCP server\n  jev cli                           run the JSONL CLI adapter\n\nOptions:\n  --project DIR                     target workspace; defaults to cwd\n  --command CMD                     MCP command; defaults to jev\n  --provider NAME                   override provider for generated config\n  --force                           replace generated init files\n`);
+  console.log(`jev-layer portable setup\n\nCommands:\n  jev install [--project DIR]       initialize local state\n  jev init [--project DIR]          write .jev/config.json and env example\n  jev add <harness> [options]       add omp, hermes, codex, or generic MCP adapter\n  jev doctor [--project DIR]        check runtime, config, provider and secrets\n  jev mcp                           run the stdio MCP server\n  jev cli                           run the JSONL CLI adapter\n\nOptions:\n  --project DIR                     target workspace; defaults to cwd\n  --command CMD                     MCP command; defaults to jev (Node entrypoint on Windows)\n  --provider NAME                   override provider for generated config\n  --force                           replace generated init files\n`);
 }

@@ -109,7 +109,7 @@ Add a fixture covering empty input, malformed entries, duplicate ids, unavailabl
 
 ## Adding a browser executor
 
-Browser executors are host-owned and optional. Implement `observe()` plus `execute(action)`, and implement `select(action)` when the host has a native select mechanism. The observation must be bounded and structured; the executor must validate target ids, preserve host approval, return the next observation, and report failures without retrying implicitly. Do not add screenshots, text entry, browser workers, or permission logic to jev-layer as part of an executor contribution.
+Browser executors are host-owned and optional. Implement `observe()` plus `execute(action)`, and implement `select(action)` when the host has a native select mechanism. The observation must be bounded and structured; the executor must validate target ids, preserve host approval, return the next observation, and report failures without retrying implicitly. The host may supply a prepared PNG/JPEG screenshot through the existing advisory image contract. Do not add screenshot capture, text generation, browser workers, or permission logic to jev-layer as part of an executor contribution.
 
 ## Adding an eval or replay fixture
 

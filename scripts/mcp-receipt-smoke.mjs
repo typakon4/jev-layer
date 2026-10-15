@@ -4,14 +4,16 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(new URL("..", import.meta.url).pathname);
+const root = fileURLToPath(new URL("..", import.meta.url));
 const casesPath = join(await mkdtemp(join(tmpdir(), "jev-mcp-receipt-")), "cases.jsonl");
 const child = spawn(process.env.JEV_NODE ?? "node", [resolve(root, "src/mcp-server.mjs")], {
   cwd: root,
   env: { ...process.env, JEV_REPLAY_CASES: casesPath },
   stdio: ["pipe", "pipe", "pipe"],
 });
+const closed = new Promise((resolveExit) => child.once("close", resolveExit));
 const lines = createInterface({ input: child.stdout });
 const pending = new Map();
 lines.on("line", (line) => {
@@ -90,7 +92,7 @@ try {
   console.log(JSON.stringify({ ok: true, cases_path: casesPath, receipt }, null, 2));
 } finally {
   child.kill();
-  await new Promise((resolveExit) => child.once("close", resolveExit));
+  await closed;
 }
 
 function request(id, method, params) {

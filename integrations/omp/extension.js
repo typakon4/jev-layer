@@ -16,6 +16,7 @@ export default function jevLayerExtension(pi) {
       intent: z.string(),
       harness: z.string().optional(),
       context: z.unknown().optional(),
+      assets: z.unknown().optional(),
       actor_permissions: z.array(z.string()).optional(),
       capabilities: z.array(z.unknown()),
       policy: z.unknown().optional(),

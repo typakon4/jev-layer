@@ -167,6 +167,7 @@ function replayRequest(request) {
     actor_permissions: Array.isArray(request.actor_permissions) ? request.actor_permissions.filter((value) => typeof value === "string") : undefined,
     policy: request.policy && typeof request.policy === "object" ? request.policy : {},
     capabilities: Array.isArray(request.capabilities) ? request.capabilities.map(replayCapability) : [],
+    ...(request.assets_omitted || Object.keys(request.assets ?? {}).length ? { assets_omitted: true } : {}),
   };
 }
 

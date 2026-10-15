@@ -20,6 +20,7 @@ The MCP server currently exposes these stable tool names:
 
 - `jev_route`
 - `jev_browser_step` (experimental, opt-in)
+- `jev_computer_step` (experimental, opt-in; host-declared desktop actions)
 - `jev_supervise` (experimental, opt-in)
 - `jev_model_route` (report-only; experimental, opt-in)
 - `jev_shadow_compaction` (report-only; experimental, opt-in)
@@ -45,6 +46,8 @@ A v1 decision includes at least:
 
 The selected id is advisory until the host resolves it against its own capability registry and permissions. `correlation_id` is the join key for routing and execution records.
 
+Optional route `assets` carries inline PNG/JPEG images outside the bounded text projection; the provider receives each reference in `state.visual_assets`. TypeSafe sends assets/references upstream; OpenRouter expands them into inline `image_url` parts. Existing text-only requests are unchanged. Browser observations may include `screenshot: { format, data_base64, width, height }`; `browser_action` includes the native action arguments (`direction`, `tab_id`, or `url`) as applicable. `jev_computer_step` adds a separate optional `computer_action`, never an executor or an approval.
+
 ## Execution receipts
 
 A v1 `execution_receipt` is append-only JSONL data with:
@@ -69,6 +72,8 @@ A v1 replay file is JSONL. Supported records include:
 - `record_type: "supervision_case"`
 
 Routing cases retain a sanitized request and a decision summary. `supervision_case.supervision.evidence_state` is an optional v1 object with `state` (`present`, `missing`, or `contradictory`) and bounded source labels. Replay reads cases without calling host tools. New optional record fields are compatible; changing record type, correlation semantics, or the meaning of a recorded status requires a new replay schema and migration.
+
+Images are not stored in routing cases. Visual requests are marked `assets_omitted: true`; replay returns `fallback` until the original images are explicitly reattached and that marker removed. Never interpret a text-only replay as evidence of the original visual decision. Screenshot base64 is also redacted from bounded host results.
 
 ## Adapter contract
 

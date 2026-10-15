@@ -43,6 +43,14 @@ Provider output is untrusted data. Prompt injection, malicious capability descri
 
 The host must validate selected ids against its current registry, enforce permissions and approval, and reject stale, unavailable, or malformed selections. The browser fast-path is experimental, opt-in, and must not be used as a security control.
 
+## Screenshots and computer use
+
+Screenshots can expose secrets even when text keys have been redacted. Capture/redact/crop them in the host before upload; image understanding is a remote, experimental provider feature, not local vision. Inline images are excluded from durable replay and pending receipt requests, and `data_base64` fields are redacted from context/host results.
+
+`jev_computer_step` only chooses from host-declared click, type, key, scroll, or handoff actions. Computer permissions must be explicit. Click/type/key always require host confirmation, including when their declared risk is low. A Box is used only with a positive target-visibility probability and sufficient confidence; it is not proof that an action is safe.
+
+Every returned computer action is bound to the supplied screenshot's SHA-256 and dimensions. Before acting, the host must verify that it is still current, re-observe if stale, map screenshot pixels to its desktop/window/crop/DPI coordinates, and enforce native permissions, focus, approvals and cancellation. The layer never captures the desktop or injects mouse/keyboard events.
+
 ## Reporting a vulnerability
 
 Do not open a public issue for an unpatched vulnerability or include secrets in a report. Use a private GitHub Security Advisory for the repository when that channel is available. If it is not available, contact the project maintainers through the private contact channel listed by the repository owner and provide:

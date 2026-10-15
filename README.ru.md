@@ -81,12 +81,14 @@ jev doctor --project /path/to/workspace
 - **Shadow compaction:** `jev_shadow_compaction` делает пакетный консервативный report с keep/drop-кандидатами для context, который передал host. Он никогда не меняет, не суммаризирует и не удаляет context; path, error, command и requirement pin-ятся до provider review, а provider failure оставляет все остальные items.
 - **Context filtering:** опциональная детерминированная фильтрация `shadow` или `conservative` убирает устаревший context без LLM-суммаризации.
 - **Experimental browser fast-path:** `jev_browser_step` выбирает одно ограниченное действие из observation host. Host предоставляет observation, approval, native execution и recovery.
+- **Jev 1.14, зрение и computer use:** TypeSafe и OpenRouter принимают PNG/JPEG-скриншоты; адаптер преобразует формат изображений для каждого API. Опциональный `jev_computer_step` выбирает desktop-действие из набора host; Box-координаты требуют проверки видимости цели и host approval. См. [контракт](docs/AGENT-IMPLEMENTATION.md#vision-and-computer-use).
 - **Fail-open:** при отключённом, недоступном, ошибочном или неубедительном Jev вызове управление возвращается в обычный host path. Jev не расширяет permissions и не угадывает execution.
 
 Опциональные поверхности по умолчанию отключены:
 
 ```sh
 JEV_BROWSER_FAST_PATH=1 jev mcp
+JEV_LAYER_PROVIDER=openrouter JEV_COMPUTER_USE=1 jev mcp
 JEV_SUPERVISION=1 jev mcp
 JEV_CONTEXT_FILTER=shadow jev cli --input examples/route-request.json
 ```

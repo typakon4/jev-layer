@@ -68,12 +68,14 @@ A provider can be deterministic `demo`, OpenRouter Decisions, or TypeSafe. Provi
 - **Shadow compaction:** `jev_shadow_compaction` produces report-only keep/drop candidates for host-supplied context. It does not summarize, mutate, or delete context, and keeps pinned evidence on provider failure.
 - **Context filtering:** optional deterministic `shadow` or `conservative` filtering reduces stale context without LLM summarization.
 - **Experimental browser fast-path:** `jev_browser_step` recommends one bounded action from a host observation. The host supplies approval, native execution, and recovery; Jev does not start a browser worker.
+- **Jev 1.14 vision and computer use:** TypeSafe and OpenRouter accept PNG/JPEG screenshots. Opt-in `jev_computer_step` recommends host-declared desktop actions, with visibility-gated Box grounding and host confirmation. The adapter handles each provider's image format. See the [image/computer contract](docs/AGENT-IMPLEMENTATION.md#vision-and-computer-use).
 - **Fail open:** optional Jev surfaces are disabled by default. Jev never widens permissions or guesses execution.
 
 Enable optional surfaces explicitly:
 
 ```sh
 JEV_BROWSER_FAST_PATH=1 jev mcp
+JEV_LAYER_PROVIDER=openrouter JEV_COMPUTER_USE=1 jev mcp
 JEV_SUPERVISION=1 jev mcp
 JEV_CONTEXT_FILTER=shadow jev cli --input examples/route-request.json
 ```

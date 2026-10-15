@@ -39,6 +39,8 @@ export function normalizeRequest(input) {
     harness: typeof input.harness === "string" ? input.harness : "unknown",
     intent: intent.trim(),
     context: input.context && typeof input.context === "object" ? input.context : {},
+    assets: input.assets,
+    assets_omitted: input.assets_omitted === true,
     actor: typeof input.actor === "string" ? input.actor : undefined,
     actor_permissions: Array.isArray(input.actor_permissions) ? input.actor_permissions.filter((value) => typeof value === "string") : undefined,
     capabilities: input.capabilities,

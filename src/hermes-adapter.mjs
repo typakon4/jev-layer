@@ -8,6 +8,7 @@
  */
 import { createInterface } from "node:readline";
 import { decideBrowserStep } from "./browser.mjs";
+import { decideComputerStep } from "./computer.mjs";
 import { configuredProvider, configuredReplayPath, loadConfig } from "./config.mjs";
 import { appendExecutionReceipt, appendRoutingCase, buildExecutionReceipt, replayCasePath } from "./receipts.mjs";
 import { routeRequest } from "./route.mjs";
@@ -51,10 +52,18 @@ async function handle({ operation, args = {}, decision = null } = {}) {
    config,
     });
     routed.decision.browser_action = routed.action
-      ? { id: routed.action.id, operation: routed.action.operation, target_id: routed.action.target_id ?? null,
-          option_id: routed.action.option_id ?? null, consequential: routed.action.consequential }
+      ? { ...routed.action, target_id: routed.action.target_id ?? null, option_id: routed.action.option_id ?? null }
       : null;
     await persistRoutingCase(routed.request, routed.decision);
+    return routed.decision;
+  }
+  if (operation === "computer_step") {
+    const { provider: _provider, enabled, ...input } = args;
+    const routed = await decideComputerStep(input, {
+      enabled: enabled ?? (process.env.JEV_COMPUTER_USE === "1" || config.features?.computer_use), provider, config,
+    });
+    routed.decision.computer_action = routed.action;
+    await persistRoutingCase(routed.request ?? { harness: input.harness ?? "computer", intent: input.goal }, routed.decision);
     return routed.decision;
   }
   if (operation === "supervise") {
@@ -106,7 +115,9 @@ async function handle({ operation, args = {}, decision = null } = {}) {
 }
 
 async function persistRoutingCase(request, decision) {
-  decision._jev_request = request;
+  const { assets, ...retainedRequest } = request;
+  if (Object.keys(assets ?? {}).length) retainedRequest.assets_omitted = true;
+  decision._jev_request = retainedRequest;
   try {
     await appendRoutingCase({ path: casesPath, request, decision });
     decision.receipt = { ...decision.receipt, replay_case_id: decision.correlation_id, replay_persisted: true };

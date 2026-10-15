@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   replay_cases: ".jev/replay/cases.jsonl",
   features: {
     browser_fast_path: false,
+    computer_use: false,
     supervision: false,
     context_filter: null,
   },

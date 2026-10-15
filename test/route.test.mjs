@@ -72,3 +72,15 @@ test("honors explicit disablement with fail-open fallback", async () => {
     else process.env.JEV_LAYER_ENABLED = previous;
   }
 });
+
+test("visual replay cannot silently substitute text-only routing", async () => {
+  let calls = 0;
+  const decision = await routeRequest(request({
+    assets_omitted: true,
+    policy: { deterministic: true, deterministic_capability_id: "search" },
+  }), { provider: { name: "no-image-replay", async decide() { calls++; } } });
+  assert.equal(decision.status, "fallback");
+  assert.equal(decision.selected, null);
+  assert.match(decision.reason, /original images/);
+  assert.equal(calls, 0);
+});

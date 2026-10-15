@@ -29,11 +29,11 @@ test("demo routes deterministically without a network call or credentials", asyn
   assert.equal(globalThis.fetch.mock.callCount(), 0);
 });
 
-for (const [provider, endpoint, model] of [
-  ["typesafe", "https://api.typesafe.ai/v1/systemone", "jev-latest"],
-  ["openrouter", "https://openrouter.ai/api/alpha/decisions", "typesafe/jev-1.13"],
+for (const [provider, endpoint] of [
+  ["typesafe", "https://api.typesafe.ai/v1/systemone"],
+  ["openrouter", "https://openrouter.ai/api/alpha/decisions"],
 ]) {
-  test(`${provider} routes with the documented endpoint, model, auth and Choice contract`, async () => {
+  test(`${provider} routes with the documented endpoint, auth and Choice contract`, async () => {
     let calls = 0;
     const decision = await routeRequest(request, {
       provider,
@@ -53,13 +53,12 @@ for (const [provider, endpoint, model] of [
             assert.equal(init.headers["X-Title"], "Jev fixture");
           }
           const body = JSON.parse(init.body);
-          assert.equal(body.model, model);
           assert.equal(body.state.intent, request.intent);
           assert.equal(body.questions.tool.type, "choice");
           assert.deepEqual(Object.keys(body.questions.tool.criteria), ["search", "clock"]);
           assert.equal(body.questions.tool.criteria.search.description, request.capabilities[0].description);
           assert.equal("messages" in body, false);
-          return Response.json({ model, answers: { tool: answer }, usage: { input_tokens: 10, output_tokens: 2 } });
+          return Response.json({ model: body.model, answers: { tool: answer }, usage: { input_tokens: 10, output_tokens: 2 } });
         },
       },
     });

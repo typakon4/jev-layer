@@ -2,6 +2,33 @@
 
 All notable changes to jev-layer are recorded here. Entries describe public behavior and compatibility impact; provider-specific experiments are listed only when they affect a public contract.
 
+## [0.3.0] - 2026-10-15
+
+### Added
+
+- Direct TypeSafe PNG/JPEG image input with bounded asset validation and the experimental Images/Box opt-in header.
+- OpenRouter vision/Box support via inline Decisions `image_url` parts, with automatic conversion from the layer's shared assets/references format.
+- Opt-in `jev_computer_step` in MCP and Hermes: closed host actions, explicit computer permissions, confirmation, paired visibility/Box grounding and screenshot-bound coordinates.
+- Screenshot input for browser decisions and the host-owned browser fast-path.
+
+### Changed
+
+- Pin direct TypeSafe to `jev-1.14.0` and OpenRouter to `typesafe/jev-1.14`; explicit model overrides remain supported. Image-path errors fail open without copying image bytes into receipts.
+- Preserve browser action arguments in MCP/Hermes output. Raise the Hermes process timeout to 10 seconds for multi-call grounding.
+- Exclude screenshot bytes from text projection, durable replay and pending receipt requests; visual replay requires original images.
+- Keep all contracts on schema version 1 and computer use disabled by default.
+
+### Fixed
+
+- Generate native Node/entrypoint adapter commands on Windows instead of relying on npm `.cmd` shims.
+- Exercise a real installed package in cross-platform clean-install smoke; correct Windows URL paths and shutdown handling in MCP receipt smoke.
+- Report the installed package version during MCP initialization.
+
+### Distribution
+
+- [npm `jev-layer@0.3.0`](https://www.npmjs.com/package/jev-layer/v/0.3.0) · [GitHub `v0.3.0`](https://github.com/typakon4/jev-layer/releases/tag/v0.3.0).
+- Rollback: pin `jev-layer@0.2.0` and restart the MCP process; that version does not provide the new vision/computer-use surface. Report release issues through the repository issue tracker.
+
 ## [0.2.0] - 2026-09-25
 
 ### Added
